@@ -1,0 +1,2 @@
+﻿Lägg till helper metod för att hämta roll
+lägg till relevant roll för användaren

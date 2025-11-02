@@ -1,0 +1,6 @@
+﻿# Exclude log files
+*.log
+
+# Exclude appsettings.json (note: this is common for development-specific configs; ensure secrets are in user secrets instead)
+appsettings.json 
+appsettings.Development.json
