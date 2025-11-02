@@ -12,9 +12,7 @@ namespace Kursserver.Login
 
         public static void EmailValidation(this WebApplication app, IConfiguration jwtConfig, string connectionString)
         {
-
-
-        app.MapPost("api/email-validation", async (context) =>
+            app.MapPost("api/email-validation", async (context) =>
             {
                 var request = await context.Request.ReadFromJsonAsync<ExtractEmail>();
                 if (request?.Email == null)

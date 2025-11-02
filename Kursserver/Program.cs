@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Kursserver.Login;
 using Kursserver.Hubs;
+using Kursserver.Admin;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +74,9 @@ app.UseAuthorization();
 // Enable authentication and authorization middleware
 app.EmailValidation(jwtSettings, connectionString);
 app.PasscodeValidation(jwtSettings, connectionString);
+app.GetUsers(connectionString);
+app.InactivateUser(connectionString);
+app.ActivateUser(connectionString);
 
 
 app.MapGet("/", () => "Hello World!");
