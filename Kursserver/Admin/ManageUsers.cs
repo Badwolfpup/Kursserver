@@ -54,7 +54,7 @@ namespace Kursserver.Admin
             }
         }
 
-        public static void GetUsers(this WebApplication app, string connectionString)
+        public static void GetUsersEndpoint(this WebApplication app, string connectionString)
         {
 
             app.MapGet("api/fetch-users", async (context) =>
@@ -63,7 +63,7 @@ namespace Kursserver.Admin
             });
         }
 
-        public static void InactivateUser(this WebApplication app, string connectionString)
+        public static void InactivateUserEndpoint(this WebApplication app, string connectionString)
         {
             app.MapPost("api/inactivate-user", async (HttpContext context) =>
             {
@@ -100,7 +100,7 @@ namespace Kursserver.Admin
             });
         }
 
-        public static void ActivateUser(this WebApplication app, string connectionString)
+        public static void ActivateUserEndpoint(this WebApplication app, string connectionString)
         {
             app.MapPost("api/activate-user", async (HttpContext context) =>
             {

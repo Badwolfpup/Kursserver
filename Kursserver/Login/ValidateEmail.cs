@@ -10,7 +10,7 @@ namespace Kursserver.Login
     {
         public static readonly ConcurrentDictionary<string, int> passcodeStore = new();
 
-        public static void EmailValidation(this WebApplication app, IConfiguration jwtConfig, string connectionString)
+        public static void EmailValidationEndpoint(this WebApplication app, IConfiguration jwtConfig, string connectionString)
         {
             app.MapPost("api/email-validation", async (context) =>
             {

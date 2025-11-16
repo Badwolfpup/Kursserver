@@ -10,7 +10,7 @@ namespace Kursserver.Login
 {
     public static class ValidatePasscode
     {
-        public static void PasscodeValidation(this WebApplication app, IConfiguration jwtSettings, string connectionString)
+        public static void PasscodeValidationEndpoint(this WebApplication app, IConfiguration jwtSettings, string connectionString)
         {
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
