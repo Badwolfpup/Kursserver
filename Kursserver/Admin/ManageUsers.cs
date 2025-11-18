@@ -11,7 +11,7 @@ namespace Kursserver.Admin
         public static async Task FetchUsers(string connectionString, HttpContext context)
         {
             var connect = DatabaseHelper.ConnectToDatabase(connectionString);
-            string sqlQuery = "SELECT FirstName, LastName, Email, IsActive FROM Users";
+            string sqlQuery = "SELECT FirstName, LastName, Email, Course, IsActive FROM Users WHERE AuthLevel > 1";
             try
             {
                 using (var command = (await connect).CreateCommand())
@@ -27,19 +27,12 @@ namespace Kursserver.Admin
                                 FirstName = reader.GetString(0),
                                 LastName = reader.GetString(1),
                                 Email = reader.GetString(2),
-                                IsActive = reader.GetBoolean(3)
+                                Course = reader.GetInt32(3),
+                                IsActive = reader.GetBoolean(4)
                             });
                         }
-                        if (users.Any())
-                        {
-                            await context.Response.WriteAsJsonAsync(users);
-                        }
-                        else
-                        {
-                            context.Response.StatusCode = 404;
-                            await context.Response.WriteAsJsonAsync(new { error = "No active users found." });
-                            return;
-                        }
+                        await context.Response.WriteAsJsonAsync(users);
+
                     }
                 }
             }

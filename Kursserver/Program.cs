@@ -77,7 +77,9 @@ app.GetUsersEndpoint(connectionString);
 app.InactivateUserEndpoint(connectionString);
 app.ActivateUserEndpoint(connectionString);
 app.AddUserEndpoint(connectionString);
-
+app.DeletUserEndpoint(connectionString);
+app.GetPermissionEndpoint(connectionString);
+app.UpdatePermissionsEndpoints(connectionString);
 
 app.MapGet("/", () => "Hello World!");
 
