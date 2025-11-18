@@ -80,7 +80,7 @@ app.AddUserEndpoint(connectionString);
 app.DeletUserEndpoint(connectionString);
 app.GetPermissionEndpoint(connectionString);
 app.UpdatePermissionsEndpoints(connectionString);
-
+//test
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
