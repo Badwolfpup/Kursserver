@@ -69,7 +69,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
-//app.UseStaticFiles();
+app.UseStaticFiles();
 
 // Enable authentication and authorization middleware
 app.EmailValidationEndpoint(jwtSettings, connectionString);

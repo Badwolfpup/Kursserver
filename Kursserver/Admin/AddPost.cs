@@ -2,6 +2,8 @@
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
+using System.Diagnostics;
+using System.Security.Claims;
 
 namespace Kursserver.Admin
 {
@@ -36,8 +38,8 @@ namespace Kursserver.Admin
                         {
                             command.CommandText = sqlquery;
                             command.Parameters.Add("html", System.Data.SqlDbType.NVarChar).Value = request.Html;
-                            command.Parameters.Add("delta", System.Data.SqlDbType.NVarChar).Value = request.Delta;
-                            var id = GetAuthorID(connect, GetAuthorFromContext(context));
+                            command.Parameters.Add("delta", System.Data.SqlDbType.NVarChar).Value = System.Text.Json.JsonSerializer.Serialize(request.Delta); ;
+                            var id = await GetAuthorID(connectionString, request.Email);
                             if (id < 0)
                             {
                                 context.Response.StatusCode = 401; // Unauthorized
@@ -45,15 +47,28 @@ namespace Kursserver.Admin
                                 return;
                             }
                             command.Parameters.Add("authorid", System.Data.SqlDbType.Int).Value = id;
-                            int rows = await command.ExecuteNonQueryAsync();
-                            if (rows > 0)
+                            Debug.WriteLine(command.CommandText);
+                            try
                             {
-                                await context.Response.WriteAsJsonAsync(new { message = "Post added successfully." });
+                                int rows = await command.ExecuteNonQueryAsync();
+                                if (rows > 0)
+                                {
+                                    await context.Response.WriteAsJsonAsync(new { message = "Post added successfully." });
+                                }
+                                else
+                                {
+                                    context.Response.StatusCode = 500;
+                                    await context.Response.WriteAsJsonAsync(new { error = "Failed to add post." });
+                                }
                             }
-                            else
+                            catch (SqlException ex)
                             {
-                                context.Response.StatusCode = 500;
-                                await context.Response.WriteAsJsonAsync(new { error = "Failed to add post." });
+                                Console.WriteLine($"1.Database error: {ex.Message}");
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Unexpected error: {ex.Message}");
                             }
                         }
                     }
@@ -76,39 +91,26 @@ namespace Kursserver.Admin
             });
         }
 
-        private static string GetAuthorFromContext(HttpContext context)
-        {
-            var user = context.User;
-            if (user.Identity != null && user.Identity.IsAuthenticated)
-            {
-                var emailClaim = user.Claims.FirstOrDefault(c => c.Type == "email");
-                if (emailClaim != null)
-                {
-                    return emailClaim.Value;
-                }
-            }
-            return "";
-        }
 
-        private static int GetAuthorID(SqlConnection connection, string email)
+        private static async Task<int> GetAuthorID(string connectionString, string email)
         {
             if (string.IsNullOrWhiteSpace(email)) return -1;
-
+            var connect = await DatabaseHelper.ConnectToDatabase(connectionString);
             string sqlquery = "SELECT id FROM Users WHERE Email = @Email";
             try
             {
-                using (var command = connection.CreateCommand())
+                using (var command = connect.CreateCommand())
                 {
                     command.CommandText = sqlquery;
                     command.Parameters.Add("@Email", System.Data.SqlDbType.NVarChar).Value = email;
-                    var result = command.ExecuteScalar();
+                    var result = await command.ExecuteScalarAsync(); // Await this for async
                     return result != null ? Convert.ToInt32(result) : -1;
                 }
             }
             catch (SqlException ex)
             {
                 Console.WriteLine($"Database error in GetAuthorID: {ex.Message}");
-                throw; 
+                throw;
             }
             catch (Exception ex)
             {
