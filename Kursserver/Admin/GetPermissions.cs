@@ -1,5 +1,5 @@
 ﻿using Azure.Core;
-using Kursserver.Login;
+using Kursserver.Extracts;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 

@@ -1,4 +1,4 @@
-﻿namespace Kursserver.Login
+﻿namespace Kursserver.Extracts
 {
     public class ExtractPasscode
     {

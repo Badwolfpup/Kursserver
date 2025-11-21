@@ -1,4 +1,4 @@
-﻿namespace Kursserver.Admin
+﻿namespace Kursserver.Extracts
 {
     public class ExtractNewUserInfo
     {

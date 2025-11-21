@@ -69,6 +69,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+//app.UseStaticFiles();
 
 // Enable authentication and authorization middleware
 app.EmailValidationEndpoint(jwtSettings, connectionString);
@@ -80,7 +81,10 @@ app.AddUserEndpoint(connectionString);
 app.DeletUserEndpoint(connectionString);
 app.GetPermissionEndpoint(connectionString);
 app.UpdatePermissionsEndpoints(connectionString);
-//test
+app.UploadImageEndpoints(connectionString);
+app.AddPostEndpoints(connectionString);
+
+
 app.MapGet("/", () => "Hello World!");
 
 app.Run();

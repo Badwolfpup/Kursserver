@@ -1,4 +1,4 @@
-﻿using Kursserver.Login;
+﻿using Kursserver.Extracts;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using System.Runtime.CompilerServices;
