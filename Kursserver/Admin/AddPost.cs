@@ -88,6 +88,10 @@ namespace Kursserver.Admin
                     context.Response.StatusCode = 500; // Internal Server Error
                     await context.Response.WriteAsJsonAsync(new { error = "An error occurred while adding the post." });
                 }
+                finally
+                {
+                    await connect.CloseAsync();
+                }
             });
         }
 

@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Kursserver.Login;
 using Kursserver.Admin;
+using Kursserver.Content;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,6 +84,7 @@ app.GetPermissionEndpoint(connectionString);
 app.UpdatePermissionsEndpoints(connectionString);
 app.UploadImageEndpoints(connectionString);
 app.AddPostEndpoints(connectionString);
+app.GetPostsEndpoints(connectionString);
 
 
 app.MapGet("/", () => "Hello World!");
