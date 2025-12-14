@@ -11,7 +11,7 @@ namespace Kursserver.Admin
         public static async Task FetchUsers(string connectionString, HttpContext context)
         {
             var connect = DatabaseHelper.ConnectToDatabase(connectionString);
-            string sqlQuery = "SELECT u.FirstName, u.LastName, u.Email, u.Course, u.IsActive, c.Email AS CoachEmail FROM Users u LEFT JOIN StudentCoach sc ON u.id = sc.student_id LEFT JOIN Users c ON sc.coach_id = c.id WHERE u.AuthLevel = 2";
+            string sqlQuery = "SELECT u.id, u.FirstName, u.LastName, u.Email, u.Course, u.IsActive, c.Email AS CoachEmail FROM Users u LEFT JOIN StudentCoach sc ON u.id = sc.student_id LEFT JOIN Users c ON sc.coach_id = c.id WHERE u.AuthLevel = 2";
             try
             {
                 using (var command = (await connect).CreateCommand())
@@ -24,12 +24,13 @@ namespace Kursserver.Admin
                         {
                             users.Add(new
                             {
-                                FirstName = reader.GetString(0),
-                                LastName = reader.GetString(1),
-                                Email = reader.GetString(2),
-                                Course = reader.GetInt32(3),
-                                IsActive = reader.GetBoolean(4),
-                                Coach = reader.IsDBNull(5) ? null : reader.GetString(5)
+                                Id = reader.GetInt32(0),
+                                FirstName = reader.GetString(1),
+                                LastName = reader.GetString(2),
+                                Email = reader.GetString(3),
+                                Course = reader.GetInt32(4),
+                                IsActive = reader.GetBoolean(5),
+                                Coach = reader.IsDBNull(6) ? null : reader.GetString(6)
                             });
                         }
                         await context.Response.WriteAsJsonAsync(users);

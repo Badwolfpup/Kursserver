@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Kursserver.Login;
 using Kursserver.Admin;
 using Kursserver.Content;
+using Kursserver.Utils;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -90,7 +91,9 @@ app.DeleteCoachEndpoint(connectionString);
 app.GetCoachesEndpoint(connectionString);
 app.InactivateCoachesEndpoint(connectionString);
 app.ActivateCoachesEndpoint(connectionString);
-
+app.GetWeekEndpints();
+app.GetWeeklyAttendanceEndpoints(connectionString);
+app.UpdateAttendanceEndpoints(connectionString);
 
 app.MapGet("/", () => "Hello World!");
 
