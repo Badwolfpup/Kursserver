@@ -79,12 +79,17 @@ app.GetUsersEndpoint(connectionString);
 app.InactivateUserEndpoint(connectionString);
 app.ActivateUserEndpoint(connectionString);
 app.AddUserEndpoint(connectionString);
-app.DeletUserEndpoint(connectionString);
+app.DeleteUserEndpoint(connectionString);
 app.GetPermissionEndpoint(connectionString);
 app.UpdatePermissionsEndpoints(connectionString);
 app.UploadImageEndpoints(connectionString);
 app.AddPostEndpoints(connectionString);
 app.GetPostsEndpoints(connectionString);
+app.AddCoachEndpoint(connectionString);
+app.DeleteCoachEndpoint(connectionString);
+app.GetCoachesEndpoint(connectionString);
+app.InactivateCoachesEndpoint(connectionString);
+app.ActivateCoachesEndpoint(connectionString);
 
 
 app.MapGet("/", () => "Hello World!");

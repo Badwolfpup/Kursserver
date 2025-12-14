@@ -6,12 +6,12 @@ using System.Runtime.CompilerServices;
 namespace Kursserver.Admin
 {
     [Authorize]
-    public static class ManageUsers
+    public static class ManageCoaches
     {
-        public static async Task FetchUsers(string connectionString, HttpContext context)
+        public static async Task FetchCoaches(string connectionString, HttpContext context)
         {
             var connect = DatabaseHelper.ConnectToDatabase(connectionString);
-            string sqlQuery = "SELECT u.FirstName, u.LastName, u.Email, u.Course, u.IsActive, c.Email AS CoachEmail FROM Users u LEFT JOIN StudentCoach sc ON u.id = sc.student_id LEFT JOIN Users c ON sc.coach_id = c.id WHERE u.AuthLevel = 2";
+            string sqlQuery = "SELECT FirstName, LastName, Email, IsActive FROM Users WHERE AuthLevel = 3";
             try
             {
                 using (var command = (await connect).CreateCommand())
@@ -27,9 +27,7 @@ namespace Kursserver.Admin
                                 FirstName = reader.GetString(0),
                                 LastName = reader.GetString(1),
                                 Email = reader.GetString(2),
-                                Course = reader.GetInt32(3),
-                                IsActive = reader.GetBoolean(4),
-                                Coach = reader.IsDBNull(5) ? null : reader.GetString(5)
+                                IsActive = reader.GetBoolean(3)
                             });
                         }
                         await context.Response.WriteAsJsonAsync(users);
@@ -44,24 +42,24 @@ namespace Kursserver.Admin
             }
             finally
             {
-                await(await connect).CloseAsync();
+                await (await connect).CloseAsync();
             }
         }
 
-        public static void GetUsersEndpoint(this WebApplication app, string connectionString)
+        public static void GetCoachesEndpoint(this WebApplication app, string connectionString)
         {
 
-            app.MapGet("api/fetch-users", async (context) =>
+            app.MapGet("api/fetch-coaches", async (context) =>
             {
-                await FetchUsers(connectionString, context);
+                await FetchCoaches(connectionString, context);
             });
         }
 
-        public static void InactivateUserEndpoint(this WebApplication app, string connectionString)
+        public static void InactivateCoachesEndpoint(this WebApplication app, string connectionString)
         {
-            app.MapPost("api/inactivate-user", async (HttpContext context) =>
+            app.MapPost("api/inactivate-coach", async (HttpContext context) =>
             {
-                var connect = await DatabaseHelper.ConnectToDatabase(connectionString);  
+                var connect = await DatabaseHelper.ConnectToDatabase(connectionString);
                 var request = await context.Request.ReadFromJsonAsync<ExtractEmail>();
                 string sqlquery = "UPDATE Users SET IsActive=0 WHERE Email=@Email";
                 try
@@ -71,14 +69,14 @@ namespace Kursserver.Admin
                         command.CommandText = sqlquery;
                         command.Parameters.Add("@Email", System.Data.SqlDbType.NVarChar).Value = request.Email;
                         int rowsAffected = await command.ExecuteNonQueryAsync();
-                        if (rowsAffected> 0)
+                        if (rowsAffected > 0)
                         {
-                            await FetchUsers(connectionString, context);
+                            await FetchCoaches(connectionString, context);
                         }
                         else
                         {
                             context.Response.StatusCode = 404;
-                            await context.Response.WriteAsJsonAsync(new { error = "User not found." });
+                            await context.Response.WriteAsJsonAsync(new { error = "Coach not found." });
                         }
                     }
                 }
@@ -94,9 +92,9 @@ namespace Kursserver.Admin
             });
         }
 
-        public static void ActivateUserEndpoint(this WebApplication app, string connectionString)
+        public static void ActivateCoachesEndpoint(this WebApplication app, string connectionString)
         {
-            app.MapPost("api/activate-user", async (HttpContext context) =>
+            app.MapPost("api/activate-coach", async (HttpContext context) =>
             {
                 var connect = await DatabaseHelper.ConnectToDatabase(connectionString);
                 var request = await context.Request.ReadFromJsonAsync<ExtractEmail>();
@@ -110,12 +108,12 @@ namespace Kursserver.Admin
                         int rowsAffected = await command.ExecuteNonQueryAsync();
                         if (rowsAffected > 0)
                         {
-                            await FetchUsers(connectionString, context);
+                            await FetchCoaches(connectionString, context);
                         }
                         else
                         {
                             context.Response.StatusCode = 404;
-                            await context.Response.WriteAsJsonAsync(new { error = "User not found." });
+                            await context.Response.WriteAsJsonAsync(new { error = "Coach not found." });
                         }
                     }
                 }
