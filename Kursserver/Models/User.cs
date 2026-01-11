@@ -6,11 +6,11 @@ namespace Kursserver.Models
 {
     public enum Role
     {
-        Admin,
-        Teacher,
-        Coach,
-        Student,
-        Guest
+        Admin = 1,
+        Teacher = 2,
+        Coach = 3,
+        Student = 4,
+        Guest = 5
     }
 
     public class User
@@ -31,7 +31,7 @@ namespace Kursserver.Models
         [Required]
         public bool IsActive { get; set; } = true;
 
-        public int Course { get; set; } = 3;
+        public int? Course { get; set; } = 3;
 
         public int? CoachId { get; set; }
         public User? Coach { get; set; }

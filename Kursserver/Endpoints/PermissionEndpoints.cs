@@ -8,7 +8,7 @@ namespace Kursserver.Endpoints
     {
         public static void MapPermissionEndpoints(this WebApplication app)
         {
-            app.MapPost("api/fetch-user-permissions", (FetchPermissionDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapPost("api/fetch-user-permissions", async (FetchPermissionDto dto, ApplicationDbContext db) =>
             {
                 var user = db.Users.FirstOrDefault(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("User not found");
@@ -25,9 +25,9 @@ namespace Kursserver.Endpoints
 
             });
 
-            app.MapPut("api/update-user-permissions", async (UpdatePermissionDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapPut("api/update-user-permissions", async (UpdatePermissionDto dto, ApplicationDbContext db) =>
             {
-                var user = db.Users.FirstOrDefault(x => x.Email == dto.Email);
+                var user = await db.Users.FindAsync(dto.UserId);
                 if (user == null) return Results.NotFound("User not found");
                 try
                 {

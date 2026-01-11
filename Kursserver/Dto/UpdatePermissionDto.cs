@@ -2,7 +2,7 @@
 {
     public class UpdatePermissionDto
     {
-        public string Email { get; set; }
+        public int UserId { get; set; }
 
         public bool? Html { get; set; }
         public bool? Css { get; set; }

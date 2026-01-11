@@ -14,10 +14,12 @@ namespace Kursserver.Endpoints
     {
         public static void MapPostEndpoints(this WebApplication app)
         {
-            app.MapGet("/api/fetch-posts", async ([FromKeyedServices] ApplicationDbContext db) =>
+            app.MapGet("/api/fetch-posts", async (ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
                     var post = await db.Posts.ToListAsync();
                     return Results.Ok(post);
                 }
@@ -27,17 +29,22 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("/api/add-posts", async (AddPostDto dto, [FromKeyedServices] ApplicationDbContext db) =>
+
+            app.MapPost("/api/add-posts", async (AddPostDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
-                    var user = await db.Users.FindAsync(dto.UserId);
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+                    var userId = new FromClaims().GetUserId(context);
+                    var user = await db.Users.FindAsync(userId);
+                    if (user == null) return Results.BadRequest("User not found");
                     var post = new Post
                     {
-                        UserId = dto.UserId,
+                        UserId = userId,
                         Html = dto.Html,
                         Delta = dto.Delta,
-                        PublishedAt = dto.PublishedAt,
+                        PublishedAt = dto.PublishDate != null ? ((DateTime)dto.PublishDate).Date : DateTime.Now,
                         Pinned = dto.Pinned,
                         Author = user != null ? $"{user.FirstName} {user.LastName}" : ""
                     };
@@ -51,15 +58,18 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("/api/update-posts", async (UpdatePostDto dto, [FromKeyedServices] ApplicationDbContext db) =>
+            app.MapPut("/api/update-posts", async (UpdatePostDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
                     var post = await db.Posts.FindAsync(dto.Id);
                     if (post == null) return Results.Problem("Post notfound in database");
                     if (!string.IsNullOrEmpty(dto.Delta)) post.Delta = dto.Delta;
                     if (!string.IsNullOrEmpty(dto.Html)) post.Html = dto.Html;
                     if (dto.Pinned.HasValue) post.Pinned = dto.Pinned.Value;
+                    post.PublishedAt = dto.PublishDate != null ? ((DateTime)dto.PublishDate).Date : DateTime.Now;
                     post.UpdatedAt = DateTime.Now;
                     db.Posts.Update(post);
                     await db.SaveChangesAsync();
@@ -71,10 +81,30 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/upload-image", async (UploadImageDto dto, [FromKeyedServices] ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("/api/delete-post/{id}",async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+                    var post = await db.Posts.FindAsync(id);
+                    if (post == null) return Results.NotFound("Post not found");
+                    db.Posts.Remove(post);
+                    await db.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to delete post: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            app.MapPost("api/upload-image", async (UploadImageDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
                     // Step 1: Parse the base64 string (format: "data:image/png;base64,actualBase64Data")
 
                     var base64data = dto.Image.Split(',')[1];

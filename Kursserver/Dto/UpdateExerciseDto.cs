@@ -1,0 +1,19 @@
+﻿namespace Kursserver.Dto
+{
+    public class UpdateExerciseDto
+    {
+        public int Id { get; set; }
+
+        public string? Title { get; set; }
+
+        public string? Description { get; set; }
+
+        public string? Javascript { get; set; }
+
+        public string? ExpectedResult { get; set; }
+
+        public List<string>? Tags { get; set; }
+        public int? Difficulty { get; set; }
+
+    }
+}

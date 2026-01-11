@@ -25,19 +25,30 @@ namespace Kursserver.Endpoints
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
 
-            app.MapPost("api/email-validation", async (ValidateEmailDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db) =>
             {
                 var user = await db.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("Email not found.");
                 else
                 {
-                    int passcode = Random.Shared.Next(100000, 999999);
-                    passcodeStore[user.Email] = passcode;
-                    return Results.Ok(passcode);
+                    //int passcode = Random.Shared.Next(100000, 999999);
+                    //passcodeStore[user.Email] = passcode;
+                    //return Results.Ok(passcode);
+                    if (app.Environment.IsDevelopment())
+                    {
+                        int passcode = Random.Shared.Next(100000, 999999);
+                        passcodeStore[user.Email] = passcode;
+                        return Results.Ok(passcode);
+                    }
+                    else
+                    {
+                        passcodeStore[user.Email] = 790810;
+                        return Results.Ok(0);
+                    }
                 }
             });
 
-            app.MapPost("api/passcode-validation", async (ValidatePasscodeDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapPost("api/passcode-validation", async (ValidatePasscodeDto dto, ApplicationDbContext db) =>
             {
                 if (passcodeStore.ContainsKey(dto.Email) && passcodeStore[dto.Email] == dto.Passcode)
                 {
@@ -55,7 +66,7 @@ namespace Kursserver.Endpoints
                         issuer: jwtSettings["Issuer"],
                         audience: jwtSettings["Audience"],
                         claims: claims,
-                        expires: DateTime.UtcNow.AddHours(1),
+                        expires: DateTime.UtcNow.AddDays(1),
                         signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
                     );
                     var tokenString = new JwtSecurityTokenHandler().WriteToken(token);

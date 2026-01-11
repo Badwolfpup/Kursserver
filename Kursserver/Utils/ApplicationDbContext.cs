@@ -6,7 +6,6 @@ namespace Kursserver.Utils
 {
     public class ApplicationDbContext: DbContext
     {
-        //string connectionString = $"Server=localhost;Database=Kurshemsida;User Id=kursDB;Password=Hudiksvall2025!;TrustServerCertificate=True;Encrypt=True";
 
         public DbSet<User> Users { get; set; }
         public DbSet<Post> Posts { get; set; }
@@ -14,13 +13,12 @@ namespace Kursserver.Utils
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<Permission> Permissions { get; set; }
 
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Exercise> Exercises { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    optionsBuilder.UseSqlServer(connectionString);
-        //}
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

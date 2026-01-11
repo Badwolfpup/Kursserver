@@ -10,6 +10,8 @@ namespace Kursserver.Dto
 
         public string? Delta { get; set; }
 
+        public DateTime? PublishDate { get; set; }
+
         public bool? Pinned { get; set; } = false;
     }
 }

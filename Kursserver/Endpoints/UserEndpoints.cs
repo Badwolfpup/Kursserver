@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Data;
+using System.Security.Claims;
 
 
 namespace Kursserver.Endpoints
@@ -16,8 +17,12 @@ namespace Kursserver.Endpoints
     {
         public static void MapUserEndpoints(this WebApplication app) 
         {
-            app.MapPost("api/add-user", async (AddUserDto dto, [FromServices] ApplicationDbContext db) =>
+
+
+            app.MapPost("api/add-user", async ([FromBody] AddUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel);
+                if (accessCheck != null) return accessCheck;
                 var user = new User
                 {
                     FirstName = dto.FirstName,
@@ -32,6 +37,8 @@ namespace Kursserver.Endpoints
                     {
                         db.Users.Add(user);
                         await db.SaveChangesAsync();
+                        db.Permissions.Add(new Permission { UserId = user.Id });
+                        await db.SaveChangesAsync();
                         return Results.Ok(user);
                     }
                     return Results.Problem("Email already exists", statusCode: 500);
@@ -42,13 +49,14 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapDelete("api/delete-user/", async ([FromServices] ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("api/delete-user/", async ([FromBody] DeleteUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
-                    var userId = int.Parse(context.User.FindFirst("id")?.Value ?? "0");
-                    var user = await db.Users.FindAsync(userId);
-                    if (user == null) return Results.NotFound();
+                    var user = await db.Users.FindAsync(dto.Id);
+                    if (user == null) return Results.Problem("User not found");
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)user.AuthLevel);
+                    if (accessCheck != null) return accessCheck;
                     db.Users.Remove(user);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -61,9 +69,11 @@ namespace Kursserver.Endpoints
 
             
 
-            app.MapPut("api/update-user", async (UpdateUserDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapPut("api/update-user", async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var user = db.Users.FirstOrDefault(x => x.Id == dto.Id) as User;
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel);
+                if (accessCheck != null) return accessCheck;
+                var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
                 try
                 {
@@ -85,11 +95,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/fetch-users", async ([AsParameters] FetchUsersDto dto, [FromServices] ApplicationDbContext db) =>
+            app.MapGet("api/fetch-users", async (ApplicationDbContext db, HttpContext context) =>
             {
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
+                if (accessCheck != null) return accessCheck;
                 try
                 {
-                    var users = dto.AuthLevel == null ? await db.Users.ToListAsync() : await db.Users.Where(x => x.AuthLevel == dto.AuthLevel).ToListAsync();
+                    var users = await db.Users.ToListAsync();
                     return Results.Ok(users);
                 }
                 catch (Exception ex)
@@ -98,9 +110,12 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("api/update-activity", async (UpdateActivityDto dto, [FromServices] ApplicationDbContext db) => {
+            app.MapPut("api/update-activity", async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) => {
+
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)user.AuthLevel);
+                if (accessCheck != null) return accessCheck;
                 try
                 {
                     user.IsActive = !user.IsActive;
