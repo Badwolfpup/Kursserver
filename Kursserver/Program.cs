@@ -51,10 +51,10 @@ builder.Services.AddAuthorization();
 //    });
 //});
 
-builder.Services.AddSignalR().AddJsonProtocol(options =>
-{
-    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
-});
+//builder.Services.AddSignalR().AddJsonProtocol(options =>
+//{
+//    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+//});
 
 builder.Services.AddCors(options =>
 {
@@ -67,6 +67,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<EmailService>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -78,17 +80,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    // In Dev, we don't call UseStaticFiles() so it doesn't serve the old React build
 }
-//else
-//{
-
-//    // These only run on the SmarterASP server
-//    app.UseDefaultFiles();
-//    app.UseStaticFiles();
-//    //app.MapFallbackToFile("index.html");
-
-//}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -108,6 +100,7 @@ app.MapUtilityEndpoints();
 app.MapValidationEndpoints(jwtSettings);
 app.MapProjectEndpoints();
 app.MapExerciseEndpoints();
+app.MapPostGetPostEndpoint();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");

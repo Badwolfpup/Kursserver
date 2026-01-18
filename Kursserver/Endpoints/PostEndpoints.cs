@@ -9,17 +9,17 @@ using System.Diagnostics;
 
 namespace Kursserver.Endpoints
 {
-    [Authorize]
+    
     public static class PostEndpoints
     {
-        public static void MapPostEndpoints(this WebApplication app)
+        public static void MapPostGetPostEndpoint(this WebApplication app)
         {
             app.MapGet("/api/fetch-posts", async (ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
-                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
-                    if (accessCheck != null) return accessCheck;
+                    //var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    //if (accessCheck != null) return accessCheck;
                     var post = await db.Posts.ToListAsync();
                     return Results.Ok(post);
                 }
@@ -28,6 +28,11 @@ namespace Kursserver.Endpoints
                     return Results.Problem("Failed to fetch posts: " + ex.Message, statusCode: 500);
                 }
             });
+        }
+
+        [Authorize]
+        public static void MapPostEndpoints(this WebApplication app)
+        {
 
 
             app.MapPost("/api/add-posts", async (AddPostDto dto, ApplicationDbContext db, HttpContext context) =>

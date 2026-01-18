@@ -25,7 +25,7 @@ namespace Kursserver.Endpoints
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
 
-            app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db) =>
+            app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db, EmailService email) =>
             {
                 var user = await db.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("Email not found.");
@@ -38,12 +38,15 @@ namespace Kursserver.Endpoints
                     {
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
+                        //await email.SendEmailAsync(dto.Email, "Your Passcode", $"Your verification code is: {passcode}");
                         return Results.Ok(passcode);
                     }
                     else
                     {
-                        passcodeStore[user.Email] = 790810;
-                        return Results.Ok(0);
+                        int passcode = Random.Shared.Next(100000, 999999);
+                        passcodeStore[user.Email] = passcode;
+                        await email.SendEmailAsync(dto.Email, "Your Passcode", $"Your verification code is: {passcode}");
+                        return Results.Ok("Passcode sent to your email.");
                     }
                 }
             });

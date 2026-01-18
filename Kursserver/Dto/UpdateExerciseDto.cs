@@ -13,6 +13,9 @@
         public string? ExpectedResult { get; set; }
 
         public List<string>? Tags { get; set; }
+
+        public List<string>? Clues { get; set; }
+
         public int? Difficulty { get; set; }
 
     }

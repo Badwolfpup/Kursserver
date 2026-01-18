@@ -23,5 +23,7 @@ namespace Kursserver.Models
         public int Difficulty { get; set; } = 1;
         public List<string> Tags { get; set; }
 
+        public List<string> Clues { get; set; }
+
     }
 }

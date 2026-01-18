@@ -40,7 +40,7 @@ namespace Kursserver.Endpoints
                         Difficulty = dto.Difficulty,
                         ExpectedResult = dto.ExpectedResult,
                         Tags = dto.Tags ?? new List<string>(),
-
+                        Clues = dto.Clues ?? new List<string>()
                     };
                     db.Exercises.Add(exercise);
                     await db.SaveChangesAsync();
@@ -85,6 +85,7 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.ExpectedResult) && exercise.ExpectedResult != dto.ExpectedResult) exercise.ExpectedResult = dto.ExpectedResult;
                     if (dto.Difficulty != null && exercise.Difficulty != dto.Difficulty) exercise.Difficulty = (int)dto.Difficulty;
                     if (dto.Tags != null && !exercise.Tags.SequenceEqual(dto.Tags)) exercise.Tags = dto.Tags;
+                    if (dto.Clues != null && !exercise.Clues.SequenceEqual(dto.Clues)) exercise.Clues = dto.Clues;
 
                     db.Exercises.Update(exercise);
                     await db.SaveChangesAsync();

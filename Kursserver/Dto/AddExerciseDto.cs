@@ -14,5 +14,8 @@
 
         public List<string>? Tags { get; set; } = new List<string>();
 
+        public List<string>? Clues { get; set; } = new List<string>();
+
+
     }
 }
