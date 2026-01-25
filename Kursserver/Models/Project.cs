@@ -10,7 +10,7 @@ namespace Kursserver.Models
         [Required]
         public string Title { get; set; }
 
-        [Required] 
+        [Required]
         public string Description { get; set; }
 
         [Required]
@@ -26,7 +26,6 @@ namespace Kursserver.Models
         public int Difficulty { get; set; } = 1;
         public List<string> Tags { get; set; }
 
-        public string? ImageUrl { get; set; }
 
     }
 }

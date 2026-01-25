@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Kursserver.Dto
+﻿namespace Kursserver.Dto
 {
     public class UpdateProjectDto
     {
@@ -20,6 +18,5 @@ namespace Kursserver.Dto
         public List<string>? Tags { get; set; }
         public int? Difficulty { get; set; }
 
-        public string? ImageUrl { get; set; }
     }
 }

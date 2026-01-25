@@ -1,5 +1,4 @@
 ﻿using Kursserver.Models;
-using System.ComponentModel.DataAnnotations;
 
 namespace Kursserver.Dto
 {
@@ -10,10 +9,22 @@ namespace Kursserver.Dto
         public string? LastName { get; set; }
         public string? Email { get; set; }
         public Role? AuthLevel { get; set; }
-        public bool? IsActive { get; set; } = true;
+        public bool? IsActive { get; set; }
 
-        public int? Course { get; set; } = 3;
+        public int? Course { get; set; }
 
         public int? CoachId { get; set; }
+
+        public int? ContactId { get; set; }
+
+
+        public bool? ScheduledMonAm { get; set; }
+        public bool? ScheduledMonPm { get; set; }
+        public bool? ScheduledTueAm { get; set; }
+        public bool? ScheduledTuePm { get; set; }
+        public bool? ScheduledWedAm { get; set; }
+        public bool? ScheduledWedPm { get; set; }
+        public bool? ScheduledThuAm { get; set; }
+        public bool? ScheduledThuPm { get; set; }
     }
 }

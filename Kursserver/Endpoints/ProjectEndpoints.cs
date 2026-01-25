@@ -2,9 +2,7 @@
 using Kursserver.Models;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace Kursserver.Endpoints
 {
@@ -26,7 +24,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/add-project", async (AddProjectDto dto,    ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("api/add-project", async (AddProjectDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -42,7 +40,6 @@ namespace Kursserver.Endpoints
                         Javascript = dto.Javascript,
                         Difficulty = dto.Difficulty,
                         Tags = dto.Tags ?? new List<string>(),
-                        ImageUrl = dto.ImageUrl ?? ""
                     };
                     db.Projects.Add(project);
                     await db.SaveChangesAsync();
@@ -86,7 +83,6 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.Html) && project.Html != dto.Html) project.Html = dto.Html;
                     if (!string.IsNullOrEmpty(dto.Css) && project.Css != dto.Css) project.Css = dto.Css;
                     if (!string.IsNullOrEmpty(dto.Javascript) && project.Javascript != dto.Javascript) project.Javascript = dto.Javascript;
-                    if (!string.IsNullOrEmpty(dto.ImageUrl) && project.ImageUrl != dto.ImageUrl) project.ImageUrl = dto.ImageUrl;
                     if (dto.Difficulty != null && project.Difficulty != dto.Difficulty) project.Difficulty = (int)dto.Difficulty;
                     if (dto.Tags != null && !project.Tags.SequenceEqual(dto.Tags)) project.Tags = dto.Tags;
 

@@ -1,10 +1,9 @@
 ﻿using Kursserver.Models;
-using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kursserver.Utils
 {
-    public class ApplicationDbContext: DbContext
+    public class ApplicationDbContext : DbContext
     {
 
         public DbSet<User> Users { get; set; }
@@ -46,7 +45,7 @@ namespace Kursserver.Utils
 
             modelBuilder.Entity<Attendance>()
                 .HasOne(i => i.User)
-                .WithMany(u => u.AttendedDays)
+                .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

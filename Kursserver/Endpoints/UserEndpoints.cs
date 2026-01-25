@@ -4,10 +4,6 @@ using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Data;
-using System.Security.Claims;
 
 
 namespace Kursserver.Endpoints
@@ -15,7 +11,7 @@ namespace Kursserver.Endpoints
     [Authorize]
     public static class UserEndpoints
     {
-        public static void MapUserEndpoints(this WebApplication app) 
+        public static void MapUserEndpoints(this WebApplication app)
         {
 
 
@@ -29,7 +25,17 @@ namespace Kursserver.Endpoints
                     LastName = dto.LastName,
                     Email = dto.Email,
                     AuthLevel = (Role)dto.AuthLevel,
-                    Course = dto.Course,
+                    Course = dto.Course ?? null,
+                    CoachId = dto.CoachId ?? null,
+                    ContactId = dto.ContactId ?? null,
+                    ScheduledMonAm = dto.ScheduledMonAm ?? true,
+                    ScheduledMonPm = dto.ScheduledMonPm ?? true,
+                    ScheduledTueAm = dto.ScheduledTueAm ?? true,
+                    ScheduledTuePm = dto.ScheduledTuePm ?? true,
+                    ScheduledWedAm = dto.ScheduledWedAm ?? true,
+                    ScheduledWedPm = dto.ScheduledWedPm ?? true,
+                    ScheduledThuAm = dto.ScheduledThuAm ?? true,
+                    ScheduledThuPm = dto.ScheduledThuPm ?? true,
                 };
                 try
                 {
@@ -67,11 +73,11 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            
+
 
             app.MapPut("api/update-user", async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel);
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel, 1);
                 if (accessCheck != null) return accessCheck;
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
@@ -82,8 +88,17 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
                     if (dto.Course != null && dto.Course > 0) user.Course = dto.Course.Value;
                     if (dto.CoachId != null && dto.CoachId > 0) user.CoachId = dto.CoachId.Value;
+                    if (dto.ContactId != null && dto.ContactId > 0) user.ContactId = dto.ContactId.Value;
                     if (dto.AuthLevel.HasValue) user.AuthLevel = dto.AuthLevel.Value;
                     if (dto.IsActive.HasValue) user.IsActive = dto.IsActive.Value;
+                    if (dto.ScheduledMonAm.HasValue) user.ScheduledMonAm = dto.ScheduledMonAm.Value;
+                    if (dto.ScheduledMonPm.HasValue) user.ScheduledMonPm = dto.ScheduledMonPm.Value;
+                    if (dto.ScheduledTueAm.HasValue) user.ScheduledTueAm = dto.ScheduledTueAm.Value;
+                    if (dto.ScheduledTuePm.HasValue) user.ScheduledTuePm = dto.ScheduledTuePm.Value;
+                    if (dto.ScheduledWedAm.HasValue) user.ScheduledWedAm = dto.ScheduledWedAm.Value;
+                    if (dto.ScheduledWedPm.HasValue) user.ScheduledWedPm = dto.ScheduledWedPm.Value;
+                    if (dto.ScheduledThuAm.HasValue) user.ScheduledThuAm = dto.ScheduledThuAm.Value;
+                    if (dto.ScheduledThuPm.HasValue) user.ScheduledThuPm = dto.ScheduledThuPm.Value;
 
                     db.Update(user);
                     await db.SaveChangesAsync();
@@ -110,7 +125,8 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("api/update-activity", async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) => {
+            app.MapPut("api/update-activity", async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
 
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
@@ -120,7 +136,7 @@ namespace Kursserver.Endpoints
                 {
                     user.IsActive = !user.IsActive;
                     db.Update(user);
-                    await db.SaveChangesAsync(); 
+                    await db.SaveChangesAsync();
                     return Results.Ok();
                 }
                 catch (Exception ex)
@@ -128,6 +144,8 @@ namespace Kursserver.Endpoints
                     return Results.Problem("Failed to update user's activity status: " + ex.Message, statusCode: 500);
                 }
             });
+
+
 
         }
 

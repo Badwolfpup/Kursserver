@@ -4,6 +4,7 @@ using Kursserver.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kursserver.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260124163145_AddedContactToUser")]
+    partial class AddedContactToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,30 +248,6 @@ namespace Kursserver.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("ScheduledMonAm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledMonPm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledThuAm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledThuPm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledTueAm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledTuePm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledWedAm")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("ScheduledWedPm")
-                        .HasColumnType("bit");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CoachId");
@@ -281,7 +260,7 @@ namespace Kursserver.Migrations
             modelBuilder.Entity("Kursserver.Models.Attendance", b =>
                 {
                     b.HasOne("Kursserver.Models.User", "User")
-                        .WithMany()
+                        .WithMany("AttendedDays")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -324,6 +303,11 @@ namespace Kursserver.Migrations
                     b.Navigation("Coach");
 
                     b.Navigation("Contact");
+                });
+
+            modelBuilder.Entity("Kursserver.Models.User", b =>
+                {
+                    b.Navigation("AttendedDays");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 
 namespace Kursserver.Models
@@ -36,7 +35,19 @@ namespace Kursserver.Models
         public int? CoachId { get; set; }
         public User? Coach { get; set; }
 
+        public int? ContactId { get; set; }
+        public User? Contact { get; set; }
 
-        public ICollection<Attendance> AttendedDays { get; set; } = new List<Attendance>();
+        public bool ScheduledMonAm { get; set; } = true;
+        public bool ScheduledMonPm { get; set; } = true;
+
+        public bool ScheduledTueAm { get; set; } = true;
+        public bool ScheduledTuePm { get; set; } = true;
+
+        public bool ScheduledWedAm { get; set; } = true;
+        public bool ScheduledWedPm { get; set; } = true;
+
+        public bool ScheduledThuAm { get; set; } = true;
+        public bool ScheduledThuPm { get; set; } = true;
     }
 }

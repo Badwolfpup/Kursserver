@@ -3,7 +3,6 @@ using Kursserver.Models;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace Kursserver.Endpoints
 {
@@ -12,18 +11,18 @@ namespace Kursserver.Endpoints
     {
         public static void MapAttendanceEndpoints(this WebApplication app)
         {
-            app.MapGet("/api/weekly-attendance/{date}", async (string date, ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("/api/weekly-attendance/{date}/{count}", async (string date, int count, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, 4, 0);
                     if (accessCheck != null) return accessCheck;
                     DateTime monday = GetMonday(date);
-                    var attendance = await db.Attendances.Where(x => x.Date >= monday && x.Date < monday.AddDays(7)).GroupBy(x => x.UserId).ToListAsync();
+                    var attendance = await db.Attendances.Where(x => x.Date >= monday.AddDays(-7 * count) && x.Date < monday.AddDays(7 * count)).GroupBy(x => x.UserId).ToListAsync();
                     return Results.Ok(attendance.Select(x => new
                     {
-                        Id = x.Key,
-                        AttendedDays = x.Select(a => a.Date).ToList()
+                        UserId = x.Key,
+                        Date = x.Select(a => a.Date).ToList()
                     }));
                 }
                 catch (Exception ex)

@@ -1,14 +1,9 @@
-﻿using Azure.Core;
-using Kursserver.Dto;
+﻿using Kursserver.Dto;
 using Kursserver.Models;
 using Kursserver.Utils;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -19,7 +14,10 @@ namespace Kursserver.Endpoints
     public static class ValidationEndpoints
     {
         public static readonly ConcurrentDictionary<string, int> passcodeStore = new();
-        
+        public static readonly ConcurrentDictionary<string, int> passcodeAttempts = new();
+        public static readonly ConcurrentDictionary<string, DateTime> passcodeLockout = new();
+
+
         public static void MapValidationEndpoints(this WebApplication app, IConfiguration jwtSettings)
         {
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
@@ -31,21 +29,19 @@ namespace Kursserver.Endpoints
                 if (user == null) return Results.NotFound("Email not found.");
                 else
                 {
-                    //int passcode = Random.Shared.Next(100000, 999999);
-                    //passcodeStore[user.Email] = passcode;
-                    //return Results.Ok(passcode);
                     if (app.Environment.IsDevelopment())
                     {
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
-                        //await email.SendEmailAsync(dto.Email, "Your Passcode", $"Your verification code is: {passcode}");
                         return Results.Ok(passcode);
                     }
                     else
                     {
+                        if (user.AuthLevel == Role.Student) return Results.NotFound("Email not found.");
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
-                        await email.SendEmailAsync(dto.Email, "Your Passcode", $"Your verification code is: {passcode}");
+                        passcodeAttempts[user.Email] = passcodeAttempts.ContainsKey(dto.Email) ? passcodeAttempts[dto.Email]++ : 1;
+                        await email.SendEmailAsync(dto.Email, "Lösenkod CUL Programmering", $"Din lösenkod är : {passcode}");
                         return Results.Ok("Passcode sent to your email.");
                     }
                 }
@@ -53,6 +49,27 @@ namespace Kursserver.Endpoints
 
             app.MapPost("api/passcode-validation", async (ValidatePasscodeDto dto, ApplicationDbContext db) =>
             {
+                if (passcodeAttempts.ContainsKey(dto.Email) && passcodeAttempts[dto.Email] >= 10)
+                {
+                    if (passcodeLockout.ContainsKey(dto.Email))
+                    {
+                        var lockoutTime = passcodeLockout[dto.Email];
+                        if ((DateTime.UtcNow - lockoutTime).TotalMinutes < 15)
+                        {
+                            return Results.Problem($"För många försök. Försök igen om {(DateTime.UtcNow - lockoutTime).TotalMinutes.ToString()}");
+                        }
+                        else
+                        {
+                            passcodeAttempts[dto.Email] = 0;
+                            passcodeLockout.TryRemove(dto.Email, out _);
+                        }
+                    }
+                    else
+                    {
+                        passcodeLockout[dto.Email] = DateTime.UtcNow;
+                        return Results.Problem($"För många försök. Försök igen om 15 minuter");
+                    }
+                }
                 if (passcodeStore.ContainsKey(dto.Email) && passcodeStore[dto.Email] == dto.Passcode)
                 {
                     var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -61,6 +78,7 @@ namespace Kursserver.Endpoints
 {
                         new Claim(JwtRegisteredClaimNames.Sub, dto.Email),
                         new Claim("id", user.Id.ToString()),
+                        new Claim("expired", DateTime.UtcNow.AddHours(16).ToString("O")),
                         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                         new Claim(ClaimTypes.Role, user.AuthLevel.ToString())
                     };
@@ -76,7 +94,18 @@ namespace Kursserver.Endpoints
                     passcodeStore.TryRemove(dto.Email, out _);
                     return Results.Ok(new { token = tokenString });
                 }
-                else return Results.Problem("Passcode var incorrect");
+                else
+                {
+                    if (passcodeAttempts.ContainsKey(dto.Email))
+                    {
+                        passcodeAttempts[dto.Email]++;
+                    }
+                    else
+                    {
+                        passcodeAttempts[dto.Email] = 1;
+                    }
+                    return Results.Problem($"Felaktig lösenkod. {(passcodeAttempts[dto.Email] > 5 ? (10 - passcodeAttempts[dto.Email]).ToString() + " försök kvar" : "")}");
+                }
             });
         }
     }

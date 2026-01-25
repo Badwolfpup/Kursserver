@@ -1,7 +1,4 @@
-﻿using Kursserver.Models;
-using System.ComponentModel.DataAnnotations;
-
-namespace Kursserver.Dto
+﻿namespace Kursserver.Dto
 {
     public class AddPostDto
     {
@@ -11,13 +8,8 @@ namespace Kursserver.Dto
 
         public string Delta { get; set; }
 
-        public DateTime? PublishDate { get; set;  }
+        public DateTime? PublishDate { get; set; }
 
         public bool Pinned { get; set; } = false;
-
-        public User? User { get; set; }
-
-
-
     }
 }
