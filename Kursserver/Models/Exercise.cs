@@ -21,9 +21,12 @@ namespace Kursserver.Models
 
         [Required]
         public int Difficulty { get; set; } = 1;
-        public List<string> Tags { get; set; }
 
+        [Required]
+        public string ExerciseType { get; set; }
         public List<string> Clues { get; set; }
+
+        public string GoodToKnow { get; set; }
 
     }
 }

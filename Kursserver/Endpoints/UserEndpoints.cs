@@ -8,14 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Kursserver.Endpoints
 {
-    [Authorize]
+
     public static class UserEndpoints
     {
+
         public static void MapUserEndpoints(this WebApplication app)
         {
 
-
-            app.MapPost("api/add-user", async ([FromBody] AddUserDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("api/add-user", [Authorize] async ([FromBody] AddUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel);
                 if (accessCheck != null) return accessCheck;
@@ -24,6 +24,7 @@ namespace Kursserver.Endpoints
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
                     Email = dto.Email,
+                    Telephone = dto.Telephone ?? null,
                     AuthLevel = (Role)dto.AuthLevel,
                     Course = dto.Course ?? null,
                     CoachId = dto.CoachId ?? null,
@@ -55,7 +56,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapDelete("api/delete-user/", async ([FromBody] DeleteUserDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("api/delete-user/", [Authorize] async ([FromBody] DeleteUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -75,7 +76,7 @@ namespace Kursserver.Endpoints
 
 
 
-            app.MapPut("api/update-user", async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("api/update-user", [Authorize] async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel, 1);
                 if (accessCheck != null) return accessCheck;
@@ -86,6 +87,7 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
                     if (!string.IsNullOrEmpty(dto.FirstName)) user.FirstName = dto.FirstName;
                     if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
+                    if (!string.IsNullOrEmpty(dto.Telephone)) user.Telephone = dto.Telephone;
                     if (dto.Course != null && dto.Course > 0) user.Course = dto.Course.Value;
                     if (dto.CoachId != null && dto.CoachId > 0) user.CoachId = dto.CoachId.Value;
                     if (dto.ContactId != null && dto.ContactId > 0) user.ContactId = dto.ContactId.Value;
@@ -110,7 +112,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapGet("api/fetch-users", async (ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
                 if (accessCheck != null) return accessCheck;
@@ -125,7 +127,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("api/update-activity", async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("api/update-activity", [Authorize] async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) =>
             {
 
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);

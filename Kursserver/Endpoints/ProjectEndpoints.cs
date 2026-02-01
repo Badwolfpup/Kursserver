@@ -11,7 +11,7 @@ namespace Kursserver.Endpoints
     {
         public static void MapProjectEndpoints(this WebApplication app)
         {
-            app.MapGet("api/fetch-projects", async (ApplicationDbContext db) =>
+            app.MapGet("api/fetch-projects", [Authorize] async (ApplicationDbContext db) =>
             {
                 try
                 {
@@ -24,7 +24,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/add-project", async (AddProjectDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("api/add-project", [Authorize] async (AddProjectDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -39,7 +39,7 @@ namespace Kursserver.Endpoints
                         Css = dto.Css,
                         Javascript = dto.Javascript,
                         Difficulty = dto.Difficulty,
-                        Tags = dto.Tags ?? new List<string>(),
+                        ProjectType = dto.ProjectType
                     };
                     db.Projects.Add(project);
                     await db.SaveChangesAsync();
@@ -51,7 +51,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapDelete("api/delete-project/{id}", async (int id, ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("api/delete-project/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -69,7 +69,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("api/update-project", async (UpdateProjectDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("api/update-project", [Authorize] async (UpdateProjectDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -83,8 +83,8 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.Html) && project.Html != dto.Html) project.Html = dto.Html;
                     if (!string.IsNullOrEmpty(dto.Css) && project.Css != dto.Css) project.Css = dto.Css;
                     if (!string.IsNullOrEmpty(dto.Javascript) && project.Javascript != dto.Javascript) project.Javascript = dto.Javascript;
+                    if (!string.IsNullOrEmpty(dto.ProjectType) && project.ProjectType != dto.ProjectType) project.ProjectType = dto.ProjectType;
                     if (dto.Difficulty != null && project.Difficulty != dto.Difficulty) project.Difficulty = (int)dto.Difficulty;
-                    if (dto.Tags != null && !project.Tags.SequenceEqual(dto.Tags)) project.Tags = dto.Tags;
 
                     db.Projects.Update(project);
                     await db.SaveChangesAsync();

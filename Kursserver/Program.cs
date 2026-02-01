@@ -3,10 +3,6 @@ using Kursserver.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
@@ -19,7 +15,8 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddAuthentication(options => {
+builder.Services.AddAuthentication(options =>
+{
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -34,6 +31,17 @@ builder.Services.AddAuthentication(options => {
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.TryGetValue("jwt", out var token))
+            {
+                context.Token = token;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -106,6 +114,7 @@ app.MapValidationEndpoints(jwtSettings);
 app.MapProjectEndpoints();
 app.MapExerciseEndpoints();
 app.MapPostGetPostEndpoint();
+app.MapNoClassEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");

@@ -1,15 +1,13 @@
-﻿using Azure.Core;
-using Kursserver.Dto;
+﻿using Kursserver.Dto;
 using Kursserver.Models;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Diagnostics;
 
 namespace Kursserver.Endpoints
 {
-    
+
     public static class PostEndpoints
     {
         public static void MapPostGetPostEndpoint(this WebApplication app)
@@ -30,12 +28,10 @@ namespace Kursserver.Endpoints
             });
         }
 
-        [Authorize]
+
         public static void MapPostEndpoints(this WebApplication app)
         {
-
-
-            app.MapPost("/api/add-posts", async (AddPostDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/add-posts", [Authorize] async (AddPostDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -63,7 +59,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("/api/update-posts", async (UpdatePostDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("/api/update-posts", [Authorize] async (UpdatePostDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -86,7 +82,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapDelete("/api/delete-post/{id}",async (int id, ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("/api/delete-post/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -104,7 +100,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/upload-image", async (UploadImageDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("api/upload-image", [Authorize] async (UploadImageDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {

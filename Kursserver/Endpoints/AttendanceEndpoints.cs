@@ -11,7 +11,7 @@ namespace Kursserver.Endpoints
     {
         public static void MapAttendanceEndpoints(this WebApplication app)
         {
-            app.MapGet("/api/weekly-attendance/{date}/{count}", async (string date, int count, ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("/api/weekly-attendance/{date}/{count}", [Authorize] async (string date, int count, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -31,7 +31,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("/api/update-attendance", async (UpdateAttendanceDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("/api/update-attendance", [Authorize] async (UpdateAttendanceDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {

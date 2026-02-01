@@ -4,6 +4,7 @@ using Kursserver.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kursserver.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260130165201_AddedTableNoClass")]
+    partial class AddedTableNoClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,19 +65,15 @@ namespace Kursserver.Migrations
                     b.Property<int>("Difficulty")
                         .HasColumnType("int");
 
-                    b.Property<string>("ExerciseType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ExpectedResult")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("GoodToKnow")
+                    b.Property<string>("Javascript")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Javascript")
+                    b.PrimitiveCollection<string>("Tags")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -215,7 +214,7 @@ namespace Kursserver.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ProjectType")
+                    b.PrimitiveCollection<string>("Tags")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -288,9 +287,6 @@ namespace Kursserver.Migrations
 
                     b.Property<bool>("ScheduledWedPm")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Telephone")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

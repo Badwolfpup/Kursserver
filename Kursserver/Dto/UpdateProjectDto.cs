@@ -15,8 +15,8 @@
 
         public string? Javascript { get; set; }
 
-        public List<string>? Tags { get; set; }
         public int? Difficulty { get; set; }
 
+        public string? ProjectType { get; set; }
     }
 }

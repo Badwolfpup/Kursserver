@@ -24,8 +24,7 @@ namespace Kursserver.Models
 
         [Required]
         public int Difficulty { get; set; } = 1;
-        public List<string> Tags { get; set; }
-
-
+        [Required]
+        public string ProjectType { get; set; }
     }
 }

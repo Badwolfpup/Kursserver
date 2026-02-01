@@ -2,9 +2,7 @@
 using Kursserver.Models;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace Kursserver.Endpoints
 {
@@ -12,7 +10,7 @@ namespace Kursserver.Endpoints
     {
         public static void MapExerciseEndpoints(this WebApplication app)
         {
-            app.MapGet("api/fetch-exercises", async (ApplicationDbContext db) =>
+            app.MapGet("api/fetch-exercises", [Authorize] async (ApplicationDbContext db) =>
             {
                 try
                 {
@@ -25,7 +23,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPost("api/add-exercise", async (AddExerciseDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("api/add-exercise", [Authorize] async (AddExerciseDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -39,8 +37,9 @@ namespace Kursserver.Endpoints
                         Javascript = dto.Javascript,
                         Difficulty = dto.Difficulty,
                         ExpectedResult = dto.ExpectedResult,
-                        Tags = dto.Tags ?? new List<string>(),
-                        Clues = dto.Clues ?? new List<string>()
+                        Clues = dto.Clues ?? new List<string>(),
+                        ExerciseType = dto.ExerciseType,
+                        GoodToKnow = dto.GoodToKnow
                     };
                     db.Exercises.Add(exercise);
                     await db.SaveChangesAsync();
@@ -52,7 +51,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapDelete("api/delete-exercise/{id}", async (int id, ApplicationDbContext db, HttpContext context) =>
+            app.MapDelete("api/delete-exercise/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -70,7 +69,7 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapPut("api/update-exercise", async (UpdateExerciseDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("api/update-exercise", [Authorize] async (UpdateExerciseDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
@@ -83,8 +82,9 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.Description) && exercise.Description != dto.Description) exercise.Description = dto.Description;
                     if (!string.IsNullOrEmpty(dto.Javascript) && exercise.Javascript != dto.Javascript) exercise.Javascript = dto.Javascript;
                     if (!string.IsNullOrEmpty(dto.ExpectedResult) && exercise.ExpectedResult != dto.ExpectedResult) exercise.ExpectedResult = dto.ExpectedResult;
+                    if (!string.IsNullOrEmpty(dto.ExerciseType) && exercise.ExerciseType != dto.ExerciseType) exercise.ExerciseType = dto.ExerciseType;
                     if (dto.Difficulty != null && exercise.Difficulty != dto.Difficulty) exercise.Difficulty = (int)dto.Difficulty;
-                    if (dto.Tags != null && !exercise.Tags.SequenceEqual(dto.Tags)) exercise.Tags = dto.Tags;
+                    if (!string.IsNullOrEmpty(dto.GoodToKnow) && exercise.GoodToKnow != dto.GoodToKnow) exercise.GoodToKnow = dto.GoodToKnow;
                     if (dto.Clues != null && !exercise.Clues.SequenceEqual(dto.Clues)) exercise.Clues = dto.Clues;
 
                     db.Exercises.Update(exercise);

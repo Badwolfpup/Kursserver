@@ -25,6 +25,7 @@ namespace Kursserver.Models
         [Required]
         [EmailAddress]
         public string Email { get; set; }
+        public string? Telephone { get; set; }
         [Required]
         public Role AuthLevel { get; set; }
         [Required]

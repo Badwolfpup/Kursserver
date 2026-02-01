@@ -1,6 +1,6 @@
 ﻿using Kursserver.Dto;
 using Kursserver.Utils;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Kursserver.Endpoints
 {
@@ -8,7 +8,7 @@ namespace Kursserver.Endpoints
     {
         public static void MapPermissionEndpoints(this WebApplication app)
         {
-            app.MapPost("api/fetch-user-permissions", async (FetchPermissionDto dto, ApplicationDbContext db) =>
+            app.MapPost("api/fetch-user-permissions", [Authorize] async (FetchPermissionDto dto, ApplicationDbContext db) =>
             {
                 var user = db.Users.FirstOrDefault(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("User not found");
@@ -16,7 +16,7 @@ namespace Kursserver.Endpoints
                 {
                     var permissions = db.Permissions.SingleOrDefault(x => x.UserId == user.Id);
                     if (permissions == null) return Results.NotFound("Permissions not found");
-                    return Results.Ok(permissions); 
+                    return Results.Ok(permissions);
                 }
                 catch (Exception ex)
                 {
@@ -25,7 +25,7 @@ namespace Kursserver.Endpoints
 
             });
 
-            app.MapPut("api/update-user-permissions", async (UpdatePermissionDto dto, ApplicationDbContext db) =>
+            app.MapPut("api/update-user-permissions", [Authorize] async (UpdatePermissionDto dto, ApplicationDbContext db) =>
             {
                 var user = await db.Users.FindAsync(dto.UserId);
                 if (user == null) return Results.NotFound("User not found");

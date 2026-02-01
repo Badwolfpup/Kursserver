@@ -12,10 +12,10 @@
 
         public string ExpectedResult { get; set; }
 
-        public List<string>? Tags { get; set; } = new List<string>();
-
         public List<string>? Clues { get; set; } = new List<string>();
 
+        public string ExerciseType { get; set; }
 
+        public string GoodToKnow { get; set; }
     }
 }

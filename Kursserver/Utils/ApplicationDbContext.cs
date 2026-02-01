@@ -14,6 +14,8 @@ namespace Kursserver.Utils
 
         public DbSet<Project> Projects { get; set; }
         public DbSet<Exercise> Exercises { get; set; }
+
+        public DbSet<NoClass> NoClasses { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }

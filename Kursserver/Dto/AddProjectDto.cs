@@ -14,7 +14,6 @@
 
         public int Difficulty { get; set; }
 
-        public List<string>? Tags { get; set; } = new List<string>();
-
+        public string ProjectType { get; set; }
     }
 }
