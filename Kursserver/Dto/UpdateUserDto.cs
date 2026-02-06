@@ -20,7 +20,7 @@ namespace Kursserver.Dto
 
         public int? ContactId { get; set; }
 
-
+        public DateTime? StartDate { get; set; }
         public bool? ScheduledMonAm { get; set; }
         public bool? ScheduledMonPm { get; set; }
         public bool? ScheduledTueAm { get; set; }

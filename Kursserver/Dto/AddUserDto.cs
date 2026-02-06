@@ -13,6 +13,7 @@ namespace Kursserver.Dto
         public int? Course { get; set; }
         public int? CoachId { get; set; }
 
+        public DateTime? StartDate { get; set; }
         public int? ContactId { get; set; }
 
         public bool? ScheduledMonAm { get; set; }

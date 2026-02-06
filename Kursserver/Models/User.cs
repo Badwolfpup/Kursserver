@@ -31,6 +31,7 @@ namespace Kursserver.Models
         [Required]
         public bool IsActive { get; set; } = true;
 
+        public DateTime? StartDate { get; set; }
         public int? Course { get; set; } = 3;
 
         public int? CoachId { get; set; }

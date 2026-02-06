@@ -21,7 +21,7 @@ namespace Kursserver.Endpoints
                     int diff = ((7 * count) + (WeekToDisplay.DayOfWeek - DayOfWeek.Monday)) % (7 * count);
                     weeknumber = calendar.GetWeekOfYear(WeekToDisplay, culture.DateTimeFormat.CalendarWeekRule, culture.DateTimeFormat.FirstDayOfWeek);
                     if (count == 1) Weekanddate = $"{WeekToDisplay.Year} - Vecka {weeknumber}: {WeekToDisplay.AddDays(-diff).Date.ToString("d/M", CultureInfo.InvariantCulture)} - {WeekToDisplay.AddDays(-diff + 6).Date.ToString("d/M", CultureInfo.InvariantCulture)}";
-                    else Weekanddate = $"{WeekToDisplay.Year} - Vecka {weeknumber} & {weeknumber + 1}: {WeekToDisplay.AddDays(-diff).Date.ToString("d/M", CultureInfo.InvariantCulture)} - {WeekToDisplay.AddDays(-diff + 13).Date.ToString("d/M", CultureInfo.InvariantCulture)}";
+                    else Weekanddate = $"{WeekToDisplay.Year} - Vecka {weeknumber - 1} & {weeknumber}: {WeekToDisplay.AddDays(-diff - 7).Date.ToString("d/M", CultureInfo.InvariantCulture)} - {WeekToDisplay.AddDays(-diff + 6).Date.ToString("d/M", CultureInfo.InvariantCulture)}";
                     return Results.Ok(Weekanddate);
                 }
                 else return Results.Problem("Felaktigt datumformat");

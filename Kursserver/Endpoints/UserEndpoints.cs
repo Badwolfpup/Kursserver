@@ -29,6 +29,7 @@ namespace Kursserver.Endpoints
                     Course = dto.Course ?? null,
                     CoachId = dto.CoachId ?? null,
                     ContactId = dto.ContactId ?? null,
+                    StartDate = dto.StartDate ?? null,
                     ScheduledMonAm = dto.ScheduledMonAm ?? true,
                     ScheduledMonPm = dto.ScheduledMonPm ?? true,
                     ScheduledTueAm = dto.ScheduledTueAm ?? true,
@@ -93,6 +94,7 @@ namespace Kursserver.Endpoints
                     if (dto.ContactId != null && dto.ContactId > 0) user.ContactId = dto.ContactId.Value;
                     if (dto.AuthLevel.HasValue) user.AuthLevel = dto.AuthLevel.Value;
                     if (dto.IsActive.HasValue) user.IsActive = dto.IsActive.Value;
+                    if (dto.StartDate != null) user.StartDate = dto.StartDate.Value;
                     if (dto.ScheduledMonAm.HasValue) user.ScheduledMonAm = dto.ScheduledMonAm.Value;
                     if (dto.ScheduledMonPm.HasValue) user.ScheduledMonPm = dto.ScheduledMonPm.Value;
                     if (dto.ScheduledTueAm.HasValue) user.ScheduledTueAm = dto.ScheduledTueAm.Value;
@@ -112,13 +114,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("api/fetch-users/{isActive}", [Authorize] async (int isActive, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
                 if (accessCheck != null) return accessCheck;
                 try
                 {
-                    var users = await db.Users.ToListAsync();
+                    var users = await db.Users.Where(x => (isActive == 1 ? x.IsActive : !x.IsActive)).ToListAsync();
                     return Results.Ok(users);
                 }
                 catch (Exception ex)
