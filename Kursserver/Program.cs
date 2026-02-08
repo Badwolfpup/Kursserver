@@ -83,6 +83,10 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.AddHttpClient();
+
+builder.Services.AddScoped<AnthropicService>();
+builder.Services.AddScoped<DeepSeekService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -115,6 +119,8 @@ app.MapProjectEndpoints();
 app.MapExerciseEndpoints();
 app.MapPostGetPostEndpoint();
 app.MapNoClassEndpoints();
+app.MapAnthropicEndpoints();
+app.MapDeepSeekEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");

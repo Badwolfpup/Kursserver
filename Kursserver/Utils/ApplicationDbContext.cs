@@ -16,6 +16,9 @@ namespace Kursserver.Utils
         public DbSet<Exercise> Exercises { get; set; }
 
         public DbSet<NoClass> NoClasses { get; set; }
+
+        public DbSet<ExerciseHistory> ExerciseHistories { get; set; }
+        public DbSet<ProjectHistory> ProjectHistories { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -50,6 +53,24 @@ namespace Kursserver.Utils
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ExerciseHistory>()
+                .HasOne(i => i.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ExerciseHistory>()
+                .HasIndex(e => new { e.UserId, e.Topic, e.Language });
+
+            modelBuilder.Entity<ProjectHistory>()
+                .HasOne(i => i.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProjectHistory>()
+                .HasIndex(p => new { p.UserId, p.TechStack });
         }
     }
 }
