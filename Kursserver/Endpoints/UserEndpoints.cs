@@ -65,6 +65,9 @@ namespace Kursserver.Endpoints
                     if (user == null) return Results.Problem("User not found");
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)user.AuthLevel);
                     if (accessCheck != null) return accessCheck;
+                    await db.Users
+                        .Where(u => u.ContactId == user.Id)
+                        .ExecuteUpdateAsync(s => s.SetProperty(u => u.ContactId, (int?)null));
                     db.Users.Remove(user);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -114,13 +117,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapGet("api/fetch-users/{isActive}", [Authorize] async (int isActive, ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
                 if (accessCheck != null) return accessCheck;
                 try
                 {
-                    var users = await db.Users.Where(x => (isActive == 1 ? x.IsActive : !x.IsActive)).ToListAsync();
+                    var users = await db.Users.ToListAsync();
                     return Results.Ok(users);
                 }
                 catch (Exception ex)
