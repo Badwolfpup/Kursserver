@@ -101,7 +101,7 @@ namespace Kursserver.Endpoints
                             issuer: jwtSettings["Issuer"],
                             audience: jwtSettings["Audience"],
                             claims: claims,
-                            expires: DateTime.UtcNow.AddDays(6),
+                            expires: DateTime.UtcNow.AddDays(((int)user.AuthLevel <= 2 ? 30 : 6)),
                             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
                         );
                         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
