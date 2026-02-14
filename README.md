@@ -45,23 +45,23 @@ Built to solve a real need as a coding instructor - managing students, exercises
 
 ```
 Kursserver/
-â”œâ”€â”€ Endpoints/            # Minimal API endpoint groups
-â”œâ”€â”€ Models/               # EF Core entity models
-â”œâ”€â”€ Dto/                  # Data transfer objects (20+)
-â”œâ”€â”€ Migrations/           # EF Core migrations
-â”œâ”€â”€ Utils/
-â”‚   â”œâ”€â”€ ApplicationDbContext.cs
-â”‚   â”œâ”€â”€ AnthropicService.cs
-â”‚   â”œâ”€â”€ DeepSeekService.cs
-â”‚   â”œâ”€â”€ EmailService.cs
-â”‚   â”œâ”€â”€ ExercisePromptTemplates.cs
-â”‚   â”œâ”€â”€ ProjectPromptTemplates.cs
-â”‚   â”œâ”€â”€ ExerciseResponseParser.cs
-â”‚   â”œâ”€â”€ ProjectResponseParser.cs
-â”‚   â”œâ”€â”€ FromClaims.cs
-â”‚   â””â”€â”€ HasAdminPriviligies.cs
-â”œâ”€â”€ wwwroot/              # Built React frontend
-â””â”€â”€ Program.cs            # App configuration and startup
+├── Endpoints/            # Minimal API endpoint groups
+├── Models/               # EF Core entity models
+├── Dto/                  # Data transfer objects (20+)
+├── Migrations/           # EF Core migrations
+├── Utils/
+│   ├── ApplicationDbContext.cs
+│   ├── AnthropicService.cs
+│   ├── DeepSeekService.cs
+│   ├── EmailService.cs
+│   ├── ExercisePromptTemplates.cs
+│   ├── ProjectPromptTemplates.cs
+│   ├── ExerciseResponseParser.cs
+│   ├── ProjectResponseParser.cs
+│   ├── FromClaims.cs
+│   └── HasAdminPriviligies.cs
+├── wwwroot/              # Built React frontend
+└── Program.cs            # App configuration and startup
 ```
 
 ## Getting Started
