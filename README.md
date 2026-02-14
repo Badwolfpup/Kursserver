@@ -45,23 +45,23 @@ Built to solve a real need as a coding instructor - managing students, exercises
 
 ```
 Kursserver/
-├── Endpoints/            # Minimal API endpoint groups
-├── Models/               # EF Core entity models
-├── Dto/                  # Data transfer objects (20+)
-├── Migrations/           # EF Core migrations
-├── Utils/
-│   ├── ApplicationDbContext.cs
-│   ├── AnthropicService.cs
-│   ├── DeepSeekService.cs
-│   ├── EmailService.cs
-│   ├── ExercisePromptTemplates.cs
-│   ├── ProjectPromptTemplates.cs
-│   ├── ExerciseResponseParser.cs
-│   ├── ProjectResponseParser.cs
-│   ├── FromClaims.cs
-│   └── HasAdminPriviligies.cs
-├── wwwroot/              # Built React frontend
-└── Program.cs            # App configuration and startup
++-- Endpoints/            # Minimal API endpoint groups
++-- Models/               # EF Core entity models
++-- Dto/                  # Data transfer objects (20+)
++-- Migrations/           # EF Core migrations
++-- Utils/
+|   +-- ApplicationDbContext.cs
+|   +-- AnthropicService.cs
+|   +-- DeepSeekService.cs
+|   +-- EmailService.cs
+|   +-- ExercisePromptTemplates.cs
+|   +-- ProjectPromptTemplates.cs
+|   +-- ExerciseResponseParser.cs
+|   +-- ProjectResponseParser.cs
+|   +-- FromClaims.cs
+|   +-- HasAdminPriviligies.cs
++-- wwwroot/              # Built React frontend
++-- Program.cs            # App configuration and startup
 ```
 
 ## Getting Started
