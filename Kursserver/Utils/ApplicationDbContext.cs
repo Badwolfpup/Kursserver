@@ -19,6 +19,9 @@ namespace Kursserver.Utils
 
         public DbSet<ExerciseHistory> ExerciseHistories { get; set; }
         public DbSet<ProjectHistory> ProjectHistories { get; set; }
+
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketReply> TicketReplies { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -71,6 +74,30 @@ namespace Kursserver.Utils
 
             modelBuilder.Entity<ProjectHistory>()
                 .HasIndex(p => new { p.UserId, p.TechStack });
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.Sender)
+                .WithMany()
+                .HasForeignKey(t => t.SenderId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.Recipient)
+                .WithMany()
+                .HasForeignKey(t => t.RecipientId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TicketReply>()
+                .HasOne(r => r.Ticket)
+                .WithMany()
+                .HasForeignKey(r => r.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketReply>()
+                .HasOne(r => r.Sender)
+                .WithMany()
+                .HasForeignKey(r => r.SenderId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

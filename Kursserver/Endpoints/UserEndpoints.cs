@@ -117,13 +117,18 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context, int? coachId) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
                 if (accessCheck != null) return accessCheck;
                 try
                 {
-                    var users = await db.Users.ToListAsync();
+                    IQueryable<User> query = db.Users;
+                    if (coachId.HasValue && coachId.Value > 0)
+                    {
+                        query = query.Where(u => u.CoachId == coachId.Value);
+                    }
+                    var users = await query.ToListAsync();
                     return Results.Ok(users);
                 }
                 catch (Exception ex)

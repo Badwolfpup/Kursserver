@@ -173,22 +173,23 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            app.MapGet("api/me", [Authorize] async (HttpContext context) =>
+            app.MapGet("api/me", [Authorize] async (HttpContext context, ApplicationDbContext db) =>
             {
-                foreach (var claim in context.User.Claims)
-                {
-                    Console.WriteLine($"Claim Type: {claim.Type}, Value: {claim.Value}");
-                }
-
                 var userIdClaim = context.User.Claims.FirstOrDefault(c => c.Type == "id");
                 var emailClaim = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
                 var roleClaim = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+
+                var userId = int.TryParse(userIdClaim?.Value, out var uid) ? uid : 0;
+                var user = userId > 0 ? await db.Users.FindAsync(userId) : null;
 
                 return Results.Ok(new
                 {
                     Id = userIdClaim?.Value,
                     Email = emailClaim?.Value,
-                    Role = roleClaim?.Value
+                    Role = roleClaim?.Value,
+                    FirstName = user?.FirstName ?? "",
+                    LastName = user?.LastName ?? "",
+                    AuthLevel = user != null ? (int)user.AuthLevel : 5
                 });
             });
 

@@ -87,6 +87,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<AnthropicService>();
 builder.Services.AddScoped<DeepSeekService>();
+builder.Services.AddScoped<GrokService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -121,6 +122,8 @@ app.MapPostGetPostEndpoint();
 app.MapNoClassEndpoints();
 app.MapAnthropicEndpoints();
 app.MapDeepSeekEndpoints();
+app.MapGrokEndpoints();
+app.MapTicketEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");
