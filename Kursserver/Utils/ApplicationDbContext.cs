@@ -22,6 +22,9 @@ namespace Kursserver.Utils
 
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketReply> TicketReplies { get; set; }
+
+        public DbSet<AdminAvailability> AdminAvailabilities { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -98,6 +101,36 @@ namespace Kursserver.Utils
                 .WithMany()
                 .HasForeignKey(r => r.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<AdminAvailability>()
+                .HasOne(a => a.Admin)
+                .WithMany()
+                .HasForeignKey(a => a.AdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.Admin)
+                .WithMany()
+                .HasForeignKey(b => b.AdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.Coach)
+                .WithMany()
+                .HasForeignKey(b => b.CoachId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.Student)
+                .WithMany()
+                .HasForeignKey(b => b.StudentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.AdminAvailability)
+                .WithMany()
+                .HasForeignKey(b => b.AdminAvailabilityId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
