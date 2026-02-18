@@ -1,2 +1,19 @@
 ﻿Lägg till helper metod för att hämta roll
 lägg till relevant roll för användaren
+
+Ändrat i #UserEndpoints.cs
+Från detta:
+var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel, 1);
+if (accessCheck != null) return accessCheck;
+
+Till detta:
+User? kontaktUser = null;
+if (dto.ContactId != null && dto.ContactId > 0)
+{
+    kontaktUser = db.Users.FirstOrDefault(x => x.Id == dto.ContactId.Value);
+}
+var isAdminOrTeacher = kontaktUser != null &&
+    (kontaktUser.AuthLevel == Role.Admin || kontaktUser.AuthLevel == Role.Teacher);
+if (!isAdminOrTeacher) return Results.Forbid();
+
+Detta för att admin och teacher ska vara möjligt att välja hos deltagare. 
