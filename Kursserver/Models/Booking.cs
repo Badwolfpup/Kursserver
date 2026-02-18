@@ -35,5 +35,7 @@ namespace Kursserver.Models
         public bool Seen { get; set; } = false;
 
         public string MeetingType { get; set; } = "";
+
+        public string Status { get; set; } = "pending";
     }
 }

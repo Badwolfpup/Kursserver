@@ -19,7 +19,7 @@ namespace Kursserver.Endpoints
                     if (accessCheck != null) return accessCheck;
 
                     var availabilities = await db.AdminAvailabilities
-                        .Where(a => !a.IsBooked && a.EndTime > DateTime.Now)
+                        .Where(a => a.EndTime > DateTime.Now)
                         .ToListAsync();
 
                     return Results.Ok(availabilities);
@@ -111,7 +111,6 @@ namespace Kursserver.Endpoints
 
                     var availability = await db.AdminAvailabilities.FindAsync(dto.AdminAvailabilityId);
                     if (availability == null) return Results.NotFound("Availability not found");
-                    if (availability.IsBooked) return Results.BadRequest("This time slot is already booked");
 
                     // Validate the requested time fits within the availability
                     if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
@@ -122,6 +121,7 @@ namespace Kursserver.Endpoints
                     // Check for overlapping bookings on the same availability
                     var hasOverlap = await db.Bookings.AnyAsync(b =>
                         b.AdminAvailabilityId == dto.AdminAvailabilityId &&
+                        b.Status != "declined" &&
                         b.StartTime < dto.EndTime && b.EndTime > dto.StartTime);
                     if (hasOverlap) return Results.BadRequest("This time range overlaps with an existing booking");
 
@@ -147,7 +147,7 @@ namespace Kursserver.Endpoints
 
                     // After saving, check if the availability is fully covered
                     var allBookings = await db.Bookings
-                        .Where(b => b.AdminAvailabilityId == dto.AdminAvailabilityId)
+                        .Where(b => b.AdminAvailabilityId == dto.AdminAvailabilityId && b.Status != "declined")
                         .OrderBy(b => b.StartTime)
                         .ToListAsync();
 
@@ -188,6 +188,59 @@ namespace Kursserver.Endpoints
                 catch (Exception ex)
                 {
                     return Results.Problem("Failed to fetch bookings: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // POST update booking status (accept/decline) — for admin/teacher
+            app.MapPost("/api/admin-availability/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var booking = await db.Bookings.FindAsync(id);
+                    if (booking == null) return Results.NotFound("Booking not found");
+
+                    if (dto.Status != "accepted" && dto.Status != "declined")
+                        return Results.BadRequest("Status must be 'accepted' or 'declined'");
+
+                    booking.Status = dto.Status;
+                    await db.SaveChangesAsync();
+
+                    // If declining, re-evaluate whether the parent availability is still fully booked
+                    if (dto.Status == "declined")
+                    {
+                        var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId);
+                        if (availability != null && availability.IsBooked)
+                        {
+                            var activeBookings = await db.Bookings
+                                .Where(b => b.AdminAvailabilityId == booking.AdminAvailabilityId && b.Status != "declined")
+                                .OrderBy(b => b.StartTime)
+                                .ToListAsync();
+
+                            var coveredStart = availability.StartTime;
+                            var fullyCovered = true;
+                            foreach (var b in activeBookings)
+                            {
+                                if (b.StartTime > coveredStart) { fullyCovered = false; break; }
+                                if (b.EndTime > coveredStart) coveredStart = b.EndTime;
+                            }
+                            if (coveredStart < availability.EndTime) fullyCovered = false;
+
+                            if (!fullyCovered)
+                            {
+                                availability.IsBooked = false;
+                                await db.SaveChangesAsync();
+                            }
+                        }
+                    }
+
+                    return Results.Ok(booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to update booking status: " + ex.Message, statusCode: 500);
                 }
             });
 
