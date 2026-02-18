@@ -82,8 +82,14 @@ namespace Kursserver.Endpoints
 
             app.MapPut("api/update-user", [Authorize] async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel, 1);
-                if (accessCheck != null) return accessCheck;
+                User? kontaktUser = null;
+                if (dto.ContactId != null && dto.ContactId > 0)
+                {
+                    kontaktUser = db.Users.FirstOrDefault(x => x.Id == dto.ContactId.Value);
+                }
+                var isAdminOrTeacher = kontaktUser != null &&
+                    (kontaktUser.AuthLevel == Role.Admin || kontaktUser.AuthLevel == Role.Teacher);
+                if (!isAdminOrTeacher) return Results.Forbid();
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
                 try
