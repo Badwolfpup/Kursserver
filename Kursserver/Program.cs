@@ -3,6 +3,7 @@ using Kursserver.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Resend;
 using System.Text;
 using System.Text.Json;
 
@@ -74,6 +75,14 @@ builder.Services.AddCors(options =>
               .SetIsOriginAllowed(_ => true) // Allow any origin
               .AllowCredentials();
     });
+});
+
+builder.Services.AddOptions();
+builder.Services.AddHttpClient<IResend, ResendClient>();
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    //options.ApiToken = builder.Configuration["Resend"];
+    options.ApiToken = builder.Configuration["Resend:ApiKey"];
 });
 
 builder.Services.AddScoped<EmailService>();

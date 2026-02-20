@@ -34,12 +34,13 @@ namespace Kursserver.Endpoints
                     {
                         if (dto.Email == "guest@guest.com")
                         {
-                            int freecode = Random.Shared.Next(100000, 999999);
+                            //int freecode = Random.Shared.Next(100000, 999999);
                             passcodeStore[dto.Email] = 122334;
                             return Results.Ok("guest");
                         }
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
+                        //await email.ResendEmailAsync(user.Email, passcode);
                         return Results.Ok(passcode);
                     }
                     else
