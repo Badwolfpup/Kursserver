@@ -46,6 +46,24 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            // GET single availability by id — for coaches (needed when rescheduling a rescheduled booking)
+            app.MapGet("/api/admin-availability/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var availability = await db.AdminAvailabilities.FindAsync(id);
+                    if (availability == null) return Results.NotFound("Availability not found");
+                    return Results.Ok(availability);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to fetch availability: " + ex.Message, statusCode: 500);
+                }
+            });
+
             // POST add availability — for admin/teacher
             app.MapPost("/api/admin-availability/add", [Authorize] async (AddAvailabilityDto dto, ApplicationDbContext db, HttpContext context) =>
             {
@@ -190,13 +208,27 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            // POST update booking status (accept/decline) — for admin/teacher
+            // POST update booking status (accept/decline) — for admin/teacher, or coach responding to a rescheduled booking
             app.MapPost("/api/admin-availability/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
-                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
-                    if (accessCheck != null) return accessCheck;
+                    var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                    var userId = context.User.FindFirst("id")?.Value;
+
+                    // Coaches may only respond to rescheduled bookings that belong to them
+                    if (userRole == "Coach")
+                    {
+                        var bookingForCheck = await db.Bookings.FindAsync(id);
+                        if (bookingForCheck == null) return Results.NotFound("Booking not found");
+                        if (bookingForCheck.CoachId.ToString() != userId) return Results.StatusCode(403);
+                        if (bookingForCheck.Status != "rescheduled") return Results.StatusCode(403);
+                    }
+                    else
+                    {
+                        var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                        if (accessCheck != null) return accessCheck;
+                    }
 
                     var booking = await db.Bookings.FindAsync(id);
                     if (booking == null) return Results.NotFound("Booking not found");
@@ -257,7 +289,7 @@ namespace Kursserver.Endpoints
 
                     // Coaches can only cancel their own bookings
                     var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-                    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var userId = context.User.FindFirst("id")?.Value;
                     if (userRole == "Coach" && booking.CoachId.ToString() != userId)
                         return Results.StatusCode(403);
 
@@ -310,7 +342,7 @@ namespace Kursserver.Endpoints
                     if (booking == null) return Results.NotFound("Booking not found");
 
                     var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-                    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var userId = context.User.FindFirst("id")?.Value;
                     if (userRole == "Coach" && booking.CoachId.ToString() != userId)
                         return Results.StatusCode(403);
 
@@ -325,7 +357,8 @@ namespace Kursserver.Endpoints
                     booking.StartTime = dto.StartTime;
                     booking.EndTime = dto.EndTime;
                     booking.Reason = dto.Reason ?? "";
-                    booking.Status = "pending";
+                    booking.Status = "rescheduled";
+                    booking.RescheduledBy = dto.RescheduledBy;
                     await db.SaveChangesAsync();
 
                     return Results.Ok(booking);

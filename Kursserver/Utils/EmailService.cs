@@ -1,8 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
 using MimeKit;
-using System.Threading.Tasks;
+using Resend;
 
 
 namespace Kursserver.Utils
@@ -10,10 +9,24 @@ namespace Kursserver.Utils
     public class EmailService
     {
         private readonly IConfiguration _config;
+        private readonly IResend _resend;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, IResend resend)
         {
             _config = config;
+            _resend = resend;
+        }
+
+        public async Task ResendEmailAsync(string toEmail, int passcode)
+        {
+            await _resend.EmailSendAsync(new EmailMessage()
+            {
+                From = "onboarding@resend.dev",
+                //To = toEmail,
+                To = "adam_folke@yahoo.se",
+                Subject = "Din lösenkod",
+                HtmlBody = $"<p>Din lösenkod är: <strong>{passcode}</strong></p>",
+            });
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)

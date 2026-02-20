@@ -39,5 +39,7 @@ namespace Kursserver.Models
         public string Status { get; set; } = "pending";
 
         public string Reason { get; set; } = "";
+
+        public string RescheduledBy { get; set; } = "";
     }
 }
