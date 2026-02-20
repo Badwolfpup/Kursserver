@@ -19,7 +19,6 @@ namespace Kursserver.Endpoints
                     if (accessCheck != null) return accessCheck;
 
                     var availabilities = await db.AdminAvailabilities
-                        .Where(a => a.EndTime > DateTime.Now)
                         .ToListAsync();
 
                     return Results.Ok(availabilities);
@@ -206,6 +205,7 @@ namespace Kursserver.Endpoints
                         return Results.BadRequest("Status must be 'accepted' or 'declined'");
 
                     booking.Status = dto.Status;
+                    booking.Reason = dto.Reason ?? "";
                     await db.SaveChangesAsync();
 
                     // If declining, re-evaluate whether the parent availability is still fully booked
@@ -244,6 +244,98 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            // POST cancel a booking — accessible by coach (own bookings) or admin/teacher
+            app.MapPost("/api/admin-availability/bookings/{id}/cancel", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var booking = await db.Bookings.FindAsync(id);
+                    if (booking == null) return Results.NotFound("Booking not found");
+
+                    // Coaches can only cancel their own bookings
+                    var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (userRole == "Coach" && booking.CoachId.ToString() != userId)
+                        return Results.StatusCode(403);
+
+                    booking.Status = "declined";
+                    booking.Reason = dto.Reason ?? "";
+                    await db.SaveChangesAsync();
+
+                    // Re-evaluate whether the parent availability is still fully booked
+                    var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId);
+                    if (availability != null && availability.IsBooked)
+                    {
+                        var activeBookings = await db.Bookings
+                            .Where(b => b.AdminAvailabilityId == booking.AdminAvailabilityId && b.Status != "declined")
+                            .OrderBy(b => b.StartTime)
+                            .ToListAsync();
+
+                        var coveredStart = availability.StartTime;
+                        var fullyCovered = true;
+                        foreach (var b in activeBookings)
+                        {
+                            if (b.StartTime > coveredStart) { fullyCovered = false; break; }
+                            if (b.EndTime > coveredStart) coveredStart = b.EndTime;
+                        }
+                        if (coveredStart < availability.EndTime) fullyCovered = false;
+
+                        if (!fullyCovered)
+                        {
+                            availability.IsBooked = false;
+                            await db.SaveChangesAsync();
+                        }
+                    }
+
+                    return Results.Ok(booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to cancel booking: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // PUT reschedule a booking — accessible by coach (own) or admin/teacher
+            app.MapPut("/api/admin-availability/bookings/{id}/reschedule", [Authorize] async (int id, UpdateBookingTimesDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var booking = await db.Bookings.FindAsync(id);
+                    if (booking == null) return Results.NotFound("Booking not found");
+
+                    var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (userRole == "Coach" && booking.CoachId.ToString() != userId)
+                        return Results.StatusCode(403);
+
+                    if (dto.StartTime >= dto.EndTime)
+                        return Results.BadRequest("Invalid time range");
+
+                    var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId);
+                    if (availability == null) return Results.NotFound("Parent availability not found");
+                    if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
+                        return Results.BadRequest("New times are outside the availability window");
+
+                    booking.StartTime = dto.StartTime;
+                    booking.EndTime = dto.EndTime;
+                    booking.Reason = dto.Reason ?? "";
+                    booking.Status = "pending";
+                    await db.SaveChangesAsync();
+
+                    return Results.Ok(booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to reschedule booking: " + ex.Message, statusCode: 500);
+                }
+            });
+
             // GET bookings visible to coaches (all future bookings on availabilities they can see)
             app.MapGet("/api/admin-availability/bookings/visible", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
@@ -252,9 +344,7 @@ namespace Kursserver.Endpoints
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
                     if (accessCheck != null) return accessCheck;
 
-                    var bookings = await db.Bookings
-                        .Where(b => b.EndTime > DateTime.Now)
-                        .ToListAsync();
+                    var bookings = await db.Bookings.ToListAsync();
                     return Results.Ok(bookings);
                 }
                 catch (Exception ex)
