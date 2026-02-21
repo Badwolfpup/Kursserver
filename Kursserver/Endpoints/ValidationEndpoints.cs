@@ -40,7 +40,7 @@ namespace Kursserver.Endpoints
                         }
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
-                        //await email.ResendEmailAsync(user.Email, passcode);
+                        // await email.ResendEmailAsync(user.Email, passcode);
                         return Results.Ok(passcode);
                     }
                     else

@@ -21,7 +21,7 @@ namespace Kursserver.Utils
         {
             await _resend.EmailSendAsync(new EmailMessage()
             {
-                From = "onboarding@resend.dev",
+                From = "noreply@culprogramming.net",
                 //To = toEmail,
                 To = "adam_folke@yahoo.se",
                 Subject = "Din lösenkod",

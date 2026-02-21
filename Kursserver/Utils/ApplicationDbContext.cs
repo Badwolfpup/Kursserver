@@ -130,7 +130,8 @@ namespace Kursserver.Utils
                 .HasOne(b => b.AdminAvailability)
                 .WithMany()
                 .HasForeignKey(b => b.AdminAvailabilityId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

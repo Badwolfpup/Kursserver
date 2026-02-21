@@ -117,8 +117,44 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            // POST book an availability — for coaches
-            // Splits the availability around the booked time range
+            // DELETE availability — for admin/teacher
+            // Refuses if there are accepted bookings; declines pending/rescheduled ones first
+            app.MapDelete("/api/admin-availability/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var availability = await db.AdminAvailabilities.FindAsync(id);
+                    if (availability == null) return Results.NotFound("Availability not found");
+
+                    var relatedBookings = await db.Bookings
+                        .Where(b => b.AdminAvailabilityId == id)
+                        .ToListAsync();
+
+                    if (relatedBookings.Any(b => b.Status == "accepted"))
+                        return Results.BadRequest("Kan inte ta bort: det finns godkända bokningar");
+
+                    // Decline any pending/rescheduled bookings
+                    foreach (var b in relatedBookings.Where(b => b.Status != "declined"))
+                    {
+                        b.Status = "declined";
+                        b.Reason = "Tillgängligheten togs bort";
+                    }
+
+                    db.AdminAvailabilities.Remove(availability);
+                    await db.SaveChangesAsync();
+
+                    return Results.Ok();
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to delete availability: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // POST book an availability — for coaches, or standalone appointment by admin
             app.MapPost("/api/admin-availability/book", [Authorize] async (BookAvailabilityDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
@@ -126,25 +162,33 @@ namespace Kursserver.Endpoints
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
                     if (accessCheck != null) return accessCheck;
 
-                    var availability = await db.AdminAvailabilities.FindAsync(dto.AdminAvailabilityId);
-                    if (availability == null) return Results.NotFound("Availability not found");
-
-                    // Validate the requested time fits within the availability
-                    if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
-                        return Results.BadRequest("Requested time is outside the availability window");
                     if (dto.StartTime >= dto.EndTime)
                         return Results.BadRequest("Invalid time range");
 
-                    // Check for overlapping bookings on the same availability
-                    var hasOverlap = await db.Bookings.AnyAsync(b =>
-                        b.AdminAvailabilityId == dto.AdminAvailabilityId &&
-                        b.Status != "declined" &&
-                        b.StartTime < dto.EndTime && b.EndTime > dto.StartTime);
-                    if (hasOverlap) return Results.BadRequest("This time range overlaps with an existing booking");
+                    AdminAvailability? availability = null;
+
+                    if (dto.AdminAvailabilityId.HasValue)
+                    {
+                        availability = await db.AdminAvailabilities.FindAsync(dto.AdminAvailabilityId.Value);
+                        if (availability == null) return Results.NotFound("Availability not found");
+
+                        // Validate the requested time fits within the availability
+                        if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
+                            return Results.BadRequest("Requested time is outside the availability window");
+
+                        // Check for overlapping bookings on the same availability
+                        var hasOverlap = await db.Bookings.AnyAsync(b =>
+                            b.AdminAvailabilityId == dto.AdminAvailabilityId &&
+                            b.Status != "declined" &&
+                            b.StartTime < dto.EndTime && b.EndTime > dto.StartTime);
+                        if (hasOverlap) return Results.BadRequest("This time range overlaps with an existing booking");
+                    }
+
+                    var userId = int.Parse(context.User.FindFirst("id")!.Value);
 
                     var booking = new Booking
                     {
-                        AdminId = availability.AdminId,
+                        AdminId = availability?.AdminId ?? userId,
                         CoachId = dto.CoachId,
                         StudentId = dto.StudentId,
                         AdminAvailabilityId = dto.AdminAvailabilityId,
@@ -153,34 +197,35 @@ namespace Kursserver.Endpoints
                         StartTime = dto.StartTime,
                         EndTime = dto.EndTime,
                         BookedAt = DateTime.Now,
-                        Seen = false
+                        Seen = false,
+                        Status = "accepted"
                     };
 
                     db.Bookings.Add(booking);
-
-                    // Check if the entire availability is now fully booked
-                    // by loading all bookings for this availability and checking coverage
                     await db.SaveChangesAsync();
 
-                    // After saving, check if the availability is fully covered
-                    var allBookings = await db.Bookings
-                        .Where(b => b.AdminAvailabilityId == dto.AdminAvailabilityId && b.Status != "declined")
-                        .OrderBy(b => b.StartTime)
-                        .ToListAsync();
-
-                    var coveredStart = availability.StartTime;
-                    var fullyCovered = true;
-                    foreach (var b in allBookings)
+                    // Check if the entire availability is now fully booked (only for availability-linked bookings)
+                    if (availability != null)
                     {
-                        if (b.StartTime > coveredStart) { fullyCovered = false; break; }
-                        if (b.EndTime > coveredStart) coveredStart = b.EndTime;
-                    }
-                    if (coveredStart < availability.EndTime) fullyCovered = false;
+                        var allBookings = await db.Bookings
+                            .Where(b => b.AdminAvailabilityId == dto.AdminAvailabilityId && b.Status != "declined")
+                            .OrderBy(b => b.StartTime)
+                            .ToListAsync();
 
-                    if (fullyCovered)
-                    {
-                        availability.IsBooked = true;
-                        await db.SaveChangesAsync();
+                        var coveredStart = availability.StartTime;
+                        var fullyCovered = true;
+                        foreach (var b in allBookings)
+                        {
+                            if (b.StartTime > coveredStart) { fullyCovered = false; break; }
+                            if (b.EndTime > coveredStart) coveredStart = b.EndTime;
+                        }
+                        if (coveredStart < availability.EndTime) fullyCovered = false;
+
+                        if (fullyCovered)
+                        {
+                            availability.IsBooked = true;
+                            await db.SaveChangesAsync();
+                        }
                     }
 
                     return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
@@ -188,6 +233,69 @@ namespace Kursserver.Endpoints
                 catch (Exception ex)
                 {
                     return Results.Problem("Failed to book availability: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // POST create standalone appointment — for admin/teacher only
+            app.MapPost("/api/admin-availability/appointments", [Authorize] async (AdminAppointmentDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    if (dto.StartTime >= dto.EndTime)
+                        return Results.BadRequest("Invalid time range");
+
+                    var userId = int.Parse(context.User.FindFirst("id")!.Value);
+
+                    // Check coach conflicts
+                    var coachConflicts = await db.Bookings
+                        .Where(b => b.CoachId == dto.CoachId
+                                 && b.Status != "declined"
+                                 && b.StartTime < dto.EndTime
+                                 && b.EndTime > dto.StartTime)
+                        .ToListAsync();
+
+                    // Check admin's own calendar conflicts
+                    var adminConflicts = await db.Bookings
+                        .Where(b => b.AdminId == userId
+                                 && b.Status != "declined"
+                                 && b.StartTime < dto.EndTime
+                                 && b.EndTime > dto.StartTime)
+                        .ToListAsync();
+
+                    var allConflicts = coachConflicts.Union(adminConflicts).DistinctBy(b => b.Id).ToList();
+
+                    if (allConflicts.Any(b => b.Status == "accepted"))
+                        return Results.Conflict(new { type = "conflict", bookings = allConflicts.Where(b => b.Status == "accepted").ToList() });
+
+                    if (!dto.Force && allConflicts.Any(b => b.Status == "pending" || b.Status == "rescheduled"))
+                        return Results.Conflict(new { type = "warning", bookings = allConflicts.Where(b => b.Status != "declined").ToList() });
+
+                    var booking = new Booking
+                    {
+                        AdminId = userId,
+                        CoachId = dto.CoachId,
+                        StudentId = null,
+                        AdminAvailabilityId = null,
+                        Note = dto.Note,
+                        MeetingType = dto.MeetingType,
+                        StartTime = dto.StartTime,
+                        EndTime = dto.EndTime,
+                        BookedAt = DateTime.Now,
+                        Seen = false,
+                        Status = "pending"
+                    };
+
+                    db.Bookings.Add(booking);
+                    await db.SaveChangesAsync();
+
+                    return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to create appointment: " + ex.Message, statusCode: 500);
                 }
             });
 
@@ -349,10 +457,13 @@ namespace Kursserver.Endpoints
                     if (dto.StartTime >= dto.EndTime)
                         return Results.BadRequest("Invalid time range");
 
-                    var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId);
-                    if (availability == null) return Results.NotFound("Parent availability not found");
-                    if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
-                        return Results.BadRequest("New times are outside the availability window");
+                    if (booking.AdminAvailabilityId.HasValue)
+                    {
+                        var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId.Value);
+                        if (availability == null) return Results.NotFound("Parent availability not found");
+                        if (dto.StartTime < availability.StartTime || dto.EndTime > availability.EndTime)
+                            return Results.BadRequest("New times are outside the availability window");
+                    }
 
                     booking.StartTime = dto.StartTime;
                     booking.EndTime = dto.EndTime;

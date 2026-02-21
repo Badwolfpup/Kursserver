@@ -18,8 +18,7 @@ namespace Kursserver.Models
         public int? StudentId { get; set; }
         public User? Student { get; set; }
 
-        [Required]
-        public int AdminAvailabilityId { get; set; }
+        public int? AdminAvailabilityId { get; set; }
         public AdminAvailability? AdminAvailability { get; set; }
 
         public string Note { get; set; } = "";
