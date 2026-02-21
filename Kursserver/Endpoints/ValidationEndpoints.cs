@@ -27,35 +27,25 @@ namespace Kursserver.Endpoints
             app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db, EmailService email) =>
             {
                 var user = await db.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
-                if (user == null && dto.Email != "guest@guest.com") return Results.NotFound("Email not found.");
+                if (user == null) return Results.NotFound("Email not found.");
                 else
                 {
                     if (app.Environment.IsDevelopment())
                     {
-                        if (dto.Email == "guest@guest.com")
-                        {
-                            //int freecode = Random.Shared.Next(100000, 999999);
-                            passcodeStore[dto.Email] = 122334;
-                            return Results.Ok("guest");
-                        }
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
-                        // await email.ResendEmailAsync(user.Email, passcode);
-                        return Results.Ok(passcode);
+                        await email.ResendEmailAsync(user.Email, passcode);
+                        return Results.Ok("passcode");
+                        // return Results.Ok(passcode);
                     }
                     else
                     {
-                        if (dto.Email == "guest@guest.com")
-                        {
-                            int freecode = Random.Shared.Next(100000, 999999);
-                            passcodeStore[dto.Email] = 122334;
-                            return Results.Ok();
-                        }
-                        if (user.AuthLevel == Role.Student) return Results.NotFound("Email not found.");
+                        // if (user.AuthLevel == Role.Student) return Results.NotFound("Email not found.");
                         int passcode = Random.Shared.Next(100000, 999999);
                         passcodeStore[user.Email] = passcode;
                         passcodeAttempts[user.Email] = passcodeAttempts.ContainsKey(dto.Email) ? passcodeAttempts[dto.Email]++ : 1;
-                        await email.SendEmailAsync(dto.Email, "Lösenkod CUL Programmering", $"Din lösenkod är : {passcode}");
+                        await email.ResendEmailAsync(user.Email, passcode);
+                        // await email.SendEmailAsync(dto.Email, "Lösenkod CUL Programmering", $"Din lösenkod är : {passcode}");
                         return Results.Ok("Passcode sent to your email.");
                     }
                 }
