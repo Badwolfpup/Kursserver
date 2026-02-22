@@ -123,25 +123,58 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            //Changed fetch-user so students can choose an admin to send a ticket tofrom StudentTickets.tsx
             app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context, int? coachId) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
-                if (accessCheck != null) return accessCheck;
-                try
+                var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+ 
+            // Allow Admin, Teacher, Student
+                if (userRole != Role.Admin.ToString() && userRole != Role.Teacher.ToString() && userRole != Role.Student.ToString())
+                return Results.Forbid();
+ 
+            try
                 {
                     IQueryable<User> query = db.Users;
+ 
+                    // If student, only return admins and teachers
+                    if (userRole == Role.Student.ToString())
+                    {
+                    query = query.Where(u => u.AuthLevel == Role.Admin || u.AuthLevel == Role.Teacher);
+                    }
+ 
                     if (coachId.HasValue && coachId.Value > 0)
                     {
-                        query = query.Where(u => u.CoachId == coachId.Value);
+                    query = query.Where(u => u.CoachId == coachId.Value);
                     }
+ 
                     var users = await query.ToListAsync();
                     return Results.Ok(users);
-                }
-                catch (Exception ex)
-                {
+                    }
+                    catch (Exception ex)
+                    {
                     return Results.Problem("Failed to fetch user: " + ex.Message, statusCode: 500);
-                }
-            });
+                    }
+                });
+
+            // app.MapGet("api/fetch-users", [Authorize] async (ApplicationDbContext db, HttpContext context, int? coachId) =>
+            // {
+            //     var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 0);
+            //     if (accessCheck != null) return accessCheck;
+            //     try
+            //     {
+            //         IQueryable<User> query = db.Users;
+            //         if (coachId.HasValue && coachId.Value > 0)
+            //         {
+            //             query = query.Where(u => u.CoachId == coachId.Value);
+            //         }
+            //         var users = await query.ToListAsync();
+            //         return Results.Ok(users);
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         return Results.Problem("Failed to fetch user: " + ex.Message, statusCode: 500);
+            //     }
+            // });
 
             app.MapPut("api/update-activity", [Authorize] async ([FromBody] UpdateActivityDto dto, ApplicationDbContext db, HttpContext context) =>
             {
