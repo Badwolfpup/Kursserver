@@ -23,6 +23,10 @@ namespace Kursserver.Utils
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketReply> TicketReplies { get; set; }
 
+        public DbSet<TicketTimeSuggestion> TicketTimeSuggestions { get; set; }
+
+        public DbSet<TicketView> TicketViews { get; set; }
+
         public DbSet<AdminAvailability> AdminAvailabilities { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
@@ -101,6 +105,34 @@ namespace Kursserver.Utils
                 .WithMany()
                 .HasForeignKey(r => r.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TicketTimeSuggestion>()
+                .HasOne(s => s.Ticket)
+                .WithMany()
+                .HasForeignKey(s => s.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketTimeSuggestion>()
+                .HasOne(s => s.SuggestedBy)
+                .WithMany()
+                .HasForeignKey(s => s.SuggestedById)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TicketView>()
+                .HasOne(v => v.Ticket)
+                .WithMany()
+                .HasForeignKey(v => v.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketView>()
+                .HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketView>()
+                .HasIndex(v => new { v.UserId, v.TicketId })
+                .IsUnique();
 
             modelBuilder.Entity<AdminAvailability>()
                 .HasOne(a => a.Admin)
