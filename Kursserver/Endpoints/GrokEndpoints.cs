@@ -127,18 +127,6 @@ namespace Kursserver.Endpoints
 
                     var result = await grokService.GetCompletionAsync(prompt);
                     var parsed = ProjectResponseParser.Parse(result);
-                    db.ProjectHistories.Add(new ProjectHistory
-                    {
-                        UserId = userId,
-                        TechStack = request.TechStack ?? "",
-                        Difficulty = request.Difficulty,
-                        Title = parsed.Title ?? "",
-                        Description = parsed.Description?.Length > 200
-                            ? parsed.Description.Substring(0, 200)
-                            : (parsed.Description ?? ""),
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await db.SaveChangesAsync();
                     return Results.Ok(parsed);
                 }
                 catch (Exception ex)
