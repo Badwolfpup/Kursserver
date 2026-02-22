@@ -97,6 +97,44 @@ namespace Kursserver.Endpoints
                     return Results.Problem("Failed to update exercise: " + ex.Message, statusCode: 500);
                 }
             });
+
+            app.MapPost("api/exercise-feedback", [Authorize] async (
+                ExerciseFeedbackDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                var userIdClaim = context.User.FindFirst("id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Results.Unauthorized();
+
+                try
+                {
+                    var history = new ExerciseHistory
+                    {
+                        UserId = userId,
+                        Topic = dto.Topic,
+                        Language = dto.Language,
+                        Difficulty = dto.Difficulty,
+                        Title = dto.Title,
+                        Description = dto.Description?.Length > 200
+                            ? dto.Description[..200]
+                            : dto.Description ?? "",
+                        Solution = dto.Solution,
+                        Asserts = dto.Asserts,
+                        IsCompleted = dto.IsCompleted,
+                        IsPositive = dto.IsPositive,
+                        FeedbackReason = dto.FeedbackReason,
+                        FeedbackComment = dto.FeedbackComment,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    db.ExerciseHistories.Add(history);
+                    await db.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to save exercise feedback: " + ex.Message, statusCode: 500);
+                }
+            });
         }
 
     }
