@@ -135,6 +135,44 @@ namespace Kursserver.Endpoints
                     return Results.Problem("Failed to save exercise feedback: " + ex.Message, statusCode: 500);
                 }
             });
+
+            app.MapPost("api/project-feedback", [Authorize] async (
+                ProjectFeedbackDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                var userIdClaim = context.User.FindFirst("id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Results.Unauthorized();
+
+                try
+                {
+                    var history = new ProjectHistory
+                    {
+                        UserId = userId,
+                        TechStack = dto.TechStack,
+                        Difficulty = dto.Difficulty,
+                        Title = dto.Title,
+                        Description = dto.Description?.Length > 200
+                            ? dto.Description[..200]
+                            : dto.Description ?? "",
+                        SolutionHtml = dto.SolutionHtml,
+                        SolutionCss = dto.SolutionCss,
+                        SolutionJs = dto.SolutionJs,
+                        IsCompleted = dto.IsCompleted,
+                        IsPositive = dto.IsPositive,
+                        FeedbackReason = dto.FeedbackReason,
+                        FeedbackComment = dto.FeedbackComment,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    db.ProjectHistories.Add(history);
+                    await db.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to save project feedback: " + ex.Message, statusCode: 500);
+                }
+            });
         }
 
     }
