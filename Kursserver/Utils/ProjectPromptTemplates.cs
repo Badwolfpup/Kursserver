@@ -22,28 +22,47 @@
                         return $"{i + 1}. {project.Title}: {project.Description}";
                     }))}
 
-                Generate something COMPLETELY DIFFERENT from the above projects.
+                Your new project MUST be different in ALL of these ways:
+                1. Different theme/domain (if they built a restaurant site, use a completely unrelated domain)
+                2. Different layout structure (if they built a card layout, use a dashboard or gallery or timeline instead)
+                3. Different visual style (if previous was minimal, make this bold and colorful, or vice versa)
+                4. Different primary learning focus (if they practiced flexbox, focus on grid or forms or animations)
+
+                DO NOT create variations of the above projects.
+                DO NOT reuse similar layouts or themes, even with different names.
+                DO NOT use the same project structure — if they keep getting ""card components"", switch to a completely different format.
                 ";
             }
-            return $@"You are a patient web development instructor creating Frontend Mentor-style projects for people learning to code.
+            return $@"You are a creative web development instructor who designs engaging, original projects inspired by Frontend Mentor and devchallenges.io. You never repeat yourself and always surprise students with fresh, unexpected project ideas.
 
-TASK: Generate a beginner-friendly web project using {techStack}.
+TASK: Generate a unique and creative web project using {techStack}.
 
-STUDENT LEVEL: Difficulty {difficulty}/5 (1 = just started, 5 = early intermediate)
+STUDENT LEVEL: Difficulty {difficulty}/5 (1 = Newbie, 2 = Junior, 3 = Intermediate, 4 = Advanced, 5 = Guru)
 {difficultyGuidelines}
 
 PROJECT TYPE: {projectType}
 {projectTypeGuidelines}
 
+CREATIVITY & VARIETY:
+- Be original! Avoid generic projects like ""portfolio page"" or ""todo app""
+- Pick an unexpected, fun theme from domains like: space agency dashboard, vinyl record store, pet adoption center, food festival guide, cozy bookshop, surf forecast tracker, botanical garden catalog, escape room booking, vintage camera shop, mountain hiking guide, retro arcade scoreboard, coffee roastery showcase, underwater dive log, astronomy event calendar, indie game studio page
+- Vary the project STRUCTURE — don't always make ""a card with an image and text"". Mix in: multi-column layouts, dashboards, interactive forms, data displays, comparison views, timelines, galleries, pricing tables
+- Each project should feel like a real-world product, not a homework assignment
+- Draw inspiration from both Frontend Mentor challenges and devchallenges.io projects
+
 CRITICAL RULES:
-- Students are BEGINNERS - keep it achievable and encouraging
+- Match complexity strictly to the difficulty level specified above
+- Level 1-2: Keep it achievable and encouraging, focus on fundamentals
+- Level 3: Real layouts and styling, expect comfort with CSS positioning
+- Level 4-5: Real complexity is expected — multi-section sites, interactivity, polished designs
+- The gap between each level should be clearly noticeable
 - Focus on ONE main learning goal per project
 - Provide clear, specific design requirements (colors, fonts, spacing)
 - Include all necessary assets descriptions (images, icons needed)
 - Give exact specifications so students know when they're ""done""
 - No frameworks or libraries - vanilla {techStack} only
 
-PROJECT STYLE (like Frontend Mentor):
+PROJECT STYLE (like Frontend Mentor / devchallenges.io):
 - Clear visual design to replicate
 - Specific requirements (colors, fonts, sizes)
 - User stories (what the user should be able to do)
@@ -107,9 +126,11 @@ MANDATORY FORMATTING RULES:
 - Do NOT rename any sections
 - Do NOT add extra sections
 - Images MUST have max-height of 50% (use inline style or CSS)
-- All <img> tags MUST use src={{dummyPic}} (use curly braces, not quotes)
-- Example: <img src={{dummyPic}} alt=""description"" />
-- Do NOT use external URLs, ONLY use {{dummyPic}}
+- For images, choose from these available options: coral, mountain, city, forest, beach
+- Use this EXACT format for img tags: <img src=""{{image:NAME}}"" alt=""description"" /> where NAME is one of the available options
+- Example: <img src=""{{image:coral}}"" alt=""coral reef"" /> or <img src=""{{image:forest}}"" alt=""forest path"" />
+- Pick the image that best fits the project theme
+- Do NOT use external URLs or relative paths, ONLY use the {{image:NAME}} format
 - If a section doesn't apply (e.g., JS for HTML-only), write ""N/A""
 
 Now generate the project following this EXACT format.";
@@ -119,40 +140,50 @@ Now generate the project following this EXACT format.";
         {
             return difficulty switch
             {
-                1 => @"Level 1: First HTML project
+                1 => @"Level 1 - NEWBIE (Frontend Mentor: Newbie):
 - Single page with basic elements only
 - Use only: headings (h1-h3), paragraphs, images, links
 - No complex layouts - just vertical stacking
 - Focus on proper HTML structure and semantics
+- Think Frontend Mentor Newbie: QR code component, single product card, order summary
 - Example: Simple profile card, basic article page",
 
-                2 => @"Level 2: Learning structure
-- Single page with more elements
+                2 => @"Level 2 - JUNIOR (Frontend Mentor: Junior):
+- Single page with more elements and intentional styling
 - Can use: lists, divs, sections, basic forms
-- Introduce simple CSS if applicable (colors, fonts, basic spacing)
-- Simple layouts (centered content)
-- Example: Recipe card, simple landing section",
+- CSS: colors, fonts, basic spacing, centered layouts
+- Simple but polished visual presentation
+- Think Frontend Mentor Junior: Interactive rating component, NFT preview card, tip calculator
+- Example: Recipe card, simple landing section, stats preview",
 
-                3 => @"Level 3: Building confidence
-- Single page with intentional layout
-- CSS: flexbox basics, simple responsive design
-- More styling: borders, shadows, hover states
-- Forms with multiple inputs
-- Example: Pricing card, testimonial component",
+                3 => @"Level 3 - INTERMEDIATE (Frontend Mentor: Intermediate):
+- Single page with intentional layout and real structure
+- CSS: flexbox basics, simple responsive design, media queries
+- More styling: borders, shadows, hover states, transitions
+- Forms with multiple inputs and basic validation
+- Think Frontend Mentor Intermediate: Pricing toggle, testimonials grid, newsletter sign-up with validation
+- Think devchallenges.io: Windbnb listing page, Interior Consultant
+- Example: Pricing card, testimonial component, interactive form",
 
-                4 => @"Level 4: Getting comfortable
-- Multi-section page or simple multi-page site
-- CSS: flexbox layouts, CSS Grid basics, media queries
-- Interactive elements with CSS (hover, focus states)
-- JavaScript: basic DOM manipulation, simple events
-- Example: Product preview, FAQ accordion",
+                4 => @"Level 4 - ADVANCED (Frontend Mentor: Advanced):
+- Multi-section page or small multi-page site
+- CSS: complex flexbox + CSS Grid layouts, full responsive design (mobile/tablet/desktop)
+- Interactive elements: animations, transitions, toggle states
+- JavaScript: DOM manipulation, event handling, dynamic content
+- Think Frontend Mentor Advanced: E-commerce product page, job listings with filter, multi-step form
+- Think devchallenges.io: Checkout page, My Gallery, Weather app
+- Example: Product preview with image gallery, FAQ accordion, filterable card grid",
 
-                5 => @"Level 5: Early intermediate
-- Complete page or small multi-page site
-- Responsive design (mobile, tablet, desktop)
-- JavaScript: form validation, interactive components
-- More complex layouts with Grid and Flexbox
-- Example: Landing page, interactive form with validation",
+                5 => @"Level 5 - GURU (Frontend Mentor: Guru):
+- Complete, polished multi-section site or complex single-page app
+- Full responsive design with smooth transitions and animations
+- Complexity scales with tech stack:
+  * HTML only: Complex semantic structures, accessibility (ARIA), SEO best practices, structured data
+  * HTML+CSS: Multi-section responsive sites, CSS animations, advanced Grid layouts, dark/light themes
+  * HTML+CSS+JS: API consumption (fetch), localStorage, complex interactivity (dashboards, multi-step forms, drag-and-drop)
+- Think Frontend Mentor Guru: REST Countries API, Rock Paper Scissors, Kanban task management
+- Think devchallenges.io: GitHub Jobs, Country Quiz, Chat application
+- Example: Dashboard with charts, multi-step checkout, interactive data table",
 
                 _ => "Keep it simple and beginner-friendly"
             };
