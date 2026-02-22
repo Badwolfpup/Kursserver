@@ -4,6 +4,7 @@ using Kursserver.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kursserver.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260222193114_AddTicketTimeSuggestion")]
+    partial class AddTicketTimeSuggestion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -549,33 +552,6 @@ namespace Kursserver.Migrations
                     b.ToTable("TicketTimeSuggestions");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.TicketView", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("LastViewedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TicketId");
-
-                    b.HasIndex("UserId", "TicketId")
-                        .IsUnique();
-
-                    b.ToTable("TicketViews");
-                });
-
             modelBuilder.Entity("Kursserver.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -804,25 +780,6 @@ namespace Kursserver.Migrations
                     b.Navigation("SuggestedBy");
 
                     b.Navigation("Ticket");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.TicketView", b =>
-                {
-                    b.HasOne("Kursserver.Models.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Kursserver.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ticket");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Kursserver.Models.User", b =>

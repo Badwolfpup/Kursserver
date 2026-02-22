@@ -20,4 +20,17 @@ namespace Kursserver.Dto
         public int TicketId { get; set; }
         public string Message { get; set; }
     }
+
+    public class AddTicketTimeSuggestionDto
+    {
+        public int TicketId { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+    }
+
+    public class RespondToTimeSuggestionDto
+    {
+        public bool Accept { get; set; }
+        public string? DeclineReason { get; set; }
+    }
 }

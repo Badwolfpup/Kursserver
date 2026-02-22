@@ -43,6 +43,23 @@ namespace Kursserver.Endpoints
                         RecipientName = t.Recipient != null ? t.Recipient.FirstName + " " + t.Recipient.LastName : "",
                         t.CreatedAt,
                         t.UpdatedAt,
+                        AcceptedStartTime = db.TicketTimeSuggestions
+                            .Where(s => s.TicketId == t.Id && s.Status == "accepted")
+                            .Select(s => (DateTime?)s.StartTime)
+                            .FirstOrDefault(),
+                        AcceptedEndTime = db.TicketTimeSuggestions
+                            .Where(s => s.TicketId == t.Id && s.Status == "accepted")
+                            .Select(s => (DateTime?)s.EndTime)
+                            .FirstOrDefault(),
+                        HasPendingSuggestion = db.TicketTimeSuggestions
+                            .Any(s => s.TicketId == t.Id && s.Status == "pending"),
+                        HasUnread = !db.TicketViews.Any(v => v.UserId == userId && v.TicketId == t.Id)
+                            ? db.TicketReplies.Any(r => r.TicketId == t.Id && r.SenderId != userId)
+                              || db.TicketTimeSuggestions.Any(s => s.TicketId == t.Id && s.SuggestedById != userId)
+                            : db.TicketReplies.Any(r => r.TicketId == t.Id && r.SenderId != userId
+                                && r.CreatedAt > db.TicketViews.Where(v => v.UserId == userId && v.TicketId == t.Id).Select(v => v.LastViewedAt).First())
+                              || db.TicketTimeSuggestions.Any(s => s.TicketId == t.Id && s.SuggestedById != userId
+                                && s.CreatedAt > db.TicketViews.Where(v => v.UserId == userId && v.TicketId == t.Id).Select(v => v.LastViewedAt).First()),
                     }).ToListAsync();
 
                     return Results.Ok(tickets);
@@ -121,9 +138,11 @@ namespace Kursserver.Endpoints
                     var ticket = await db.Tickets.FindAsync(id);
                     if (ticket == null) return Results.NotFound("Ticket not found");
 
-                    // Also remove replies
+                    // Also remove replies and time suggestions
                     var replies = db.TicketReplies.Where(r => r.TicketId == id);
                     db.TicketReplies.RemoveRange(replies);
+                    var suggestions = db.TicketTimeSuggestions.Where(s => s.TicketId == id);
+                    db.TicketTimeSuggestions.RemoveRange(suggestions);
                     db.Tickets.Remove(ticket);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -186,6 +205,139 @@ namespace Kursserver.Endpoints
                 catch (Exception ex)
                 {
                     return Results.Problem("Failed to add reply: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // POST /api/ticket-time-suggestion — admin creates a time suggestion for a ticket
+            app.MapPost("/api/ticket-time-suggestion", [Authorize] async ([FromBody] AddTicketTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var ticket = await db.Tickets.FindAsync(dto.TicketId);
+                    if (ticket == null) return Results.NotFound("Ticket not found");
+
+                    // Reject if there's already a pending suggestion for this ticket
+                    var hasPending = await db.TicketTimeSuggestions
+                        .AnyAsync(s => s.TicketId == dto.TicketId && s.Status == "pending");
+                    if (hasPending) return Results.Conflict("A pending suggestion already exists for this ticket");
+
+                    var userId = new FromClaims().GetUserId(context);
+
+                    var suggestion = new TicketTimeSuggestion
+                    {
+                        TicketId = dto.TicketId,
+                        SuggestedById = userId,
+                        StartTime = dto.StartTime,
+                        EndTime = dto.EndTime,
+                        Status = "pending",
+                    };
+
+                    // Set ticket to InProgress
+                    ticket.Status = "InProgress";
+                    ticket.UpdatedAt = DateTime.Now;
+
+                    db.TicketTimeSuggestions.Add(suggestion);
+                    await db.SaveChangesAsync();
+                    return Results.Created($"/api/ticket-time-suggestions/{dto.TicketId}", suggestion);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to create time suggestion: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // PUT /api/ticket-time-suggestion/{id}/respond — student accepts or declines
+            app.MapPut("/api/ticket-time-suggestion/{id}/respond", [Authorize] async (int id, [FromBody] RespondToTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var suggestion = await db.TicketTimeSuggestions
+                        .Include(s => s.Ticket)
+                        .FirstOrDefaultAsync(s => s.Id == id);
+                    if (suggestion == null) return Results.NotFound("Suggestion not found");
+                    if (suggestion.Status != "pending") return Results.BadRequest("Suggestion is no longer pending");
+
+                    if (dto.Accept)
+                    {
+                        suggestion.Status = "accepted";
+                        if (suggestion.Ticket != null)
+                        {
+                            suggestion.Ticket.Status = "Closed";
+                            suggestion.Ticket.UpdatedAt = DateTime.Now;
+                        }
+                    }
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(dto.DeclineReason))
+                            return Results.BadRequest("A reason is required when declining");
+
+                        suggestion.Status = "declined";
+                        suggestion.DeclineReason = dto.DeclineReason;
+                        if (suggestion.Ticket != null)
+                        {
+                            suggestion.Ticket.UpdatedAt = DateTime.Now;
+                        }
+                    }
+
+                    await db.SaveChangesAsync();
+                    return Results.Ok(suggestion);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to respond to suggestion: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // GET /api/ticket-time-suggestions/{ticketId} — get all suggestions for a ticket
+            app.MapGet("/api/ticket-time-suggestions/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db) =>
+            {
+                try
+                {
+                    var suggestions = await db.TicketTimeSuggestions
+                        .Where(s => s.TicketId == ticketId)
+                        .Include(s => s.SuggestedBy)
+                        .OrderByDescending(s => s.CreatedAt)
+                        .Select(s => new
+                        {
+                            s.Id,
+                            s.TicketId,
+                            s.SuggestedById,
+                            SuggestedByName = s.SuggestedBy != null ? s.SuggestedBy.FirstName + " " + s.SuggestedBy.LastName : "",
+                            s.StartTime,
+                            s.EndTime,
+                            s.Status,
+                            s.DeclineReason,
+                            s.CreatedAt,
+                        }).ToListAsync();
+
+                    return Results.Ok(suggestions);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to fetch suggestions: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // POST /api/ticket-view/{ticketId} — upsert last viewed timestamp for a ticket
+            app.MapPost("/api/ticket-view/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db, HttpContext context) =>
+            {
+                try
+                {
+                    var userId = new FromClaims().GetUserId(context);
+                    var view = await db.TicketViews.FirstOrDefaultAsync(v => v.UserId == userId && v.TicketId == ticketId);
+                    if (view == null)
+                        db.TicketViews.Add(new TicketView { UserId = userId, TicketId = ticketId });
+                    else
+                        view.LastViewedAt = DateTime.Now;
+                    await db.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to mark ticket as viewed: " + ex.Message, statusCode: 500);
                 }
             });
         }
