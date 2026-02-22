@@ -61,19 +61,7 @@ namespace Kursserver.Endpoints
 
                     var (title, description, example, assumptions, functionSignature, asserts, solution) =
                         ExerciseResponseParser.ParseAssertResponse(result);
-                    db.ExerciseHistories.Add(new ExerciseHistory
-                    {
-                        UserId = userId,
-                        Topic = request.Topic,
-                        Language = request.Language,
-                        Difficulty = request.Difficulty,
-                        Title = title,
-                        Description = description.Length > 200
-                            ? description.Substring(0, 200)
-                            : description,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await db.SaveChangesAsync();
+
                     return Results.Ok(new ExerciseResponse
                     {
                         Success = true,
