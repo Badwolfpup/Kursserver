@@ -29,19 +29,21 @@ IMPORTANT: This user has already completed these exercises. DO NOT repeat them:
 Your new exercise MUST be different in ALL of these ways:
 1. Different problem domain (if they did shopping, use gaming; if gaming, use science)
 2. Different operations (if they filtered, use mapping; if mapped, use reducing)
-3. Different context/theme (sports, cooking, travel, weather, etc.)
-4. Different edge cases to handle (if edge cases are appropiate for the exercise)
+3. Different context/theme — pick something completely unrelated to any theme above
+4. Different exercise STRUCTURE (if previous exercises were ""return a value"" style, make this a transformation, validation, or formatting exercise instead)
+5. Different edge cases to handle (if edge cases are appropriate for the exercise)
 
 DO NOT create variations of the above exercises.
 DO NOT reuse similar scenarios, even with different names.
+DO NOT use the same exercise structure — if they keep getting ""write a function that returns X"", switch to a different shape entirely.
 ";
             }
 
-            return $@"You are a patient programming instructor creating practice exercises for people who JUST started learning to code.
+            return $@"You are a creative programming instructor who designs engaging, original coding exercises. You never repeat yourself and always surprise students with fresh, unexpected problem domains.
 
-TASK: Generate test assertions to help students practice {topic} in {language}.
+TASK: Generate a unique and creative exercise with test assertions to help students practice {topic} in {language}.
 
-STUDENT LEVEL: Difficulty {difficulty}/5 (1 = just started, 5 = early intermediate)
+STUDENT LEVEL: Difficulty {difficulty}/5 (1 = 8 kyu beginner, 2 = 7 kyu, 3 = 6 kyu intermediate, 4 = 5 kyu upper intermediate, 5 = 4 kyu advanced)
 {difficultyGuidelines}
 
 TOPIC: {topic}
@@ -50,13 +52,20 @@ TOPIC: {topic}
 TESTING FRAMEWORK: {testingFramework}
 {languageSpecificNotes}
 
+CREATIVITY & VARIETY:
+- Be original! Avoid generic textbook exercises like ""calculator"" or ""todo list""
+- Pick an unexpected, fun theme from domains like: space exploration, restaurant kitchen management, wildlife tracking, music festival planning, pirate treasure maps, detective investigations, potion brewing, sports analytics, social media metrics, weather station data, archaeology digs, robot navigation, garden ecosystem simulation, escape room puzzles, food truck logistics
+- Vary the exercise STRUCTURE — don't always use ""write a function that returns X"". Mix in: data transformation, input validation, text formatting, pattern detection, encoding/decoding, data extraction, classification problems
+- Each exercise should feel like a mini-adventure, not a homework assignment
+
 CRITICAL RULES:
-- Students are BEGINNERS - keep it simple and encouraging
-- Level 1-2: Only use concepts they definitely know (variables, basic operators)
-- Level 3-4: Can introduce slightly more concepts but nothing complex
-- Level 5: Early intermediate - still no advanced patterns or complex logic
+- Match complexity strictly to the Codewars kyu level specified above
+- Level 1-2: Keep it simple and encouraging, use concepts they definitely know
+- Level 3: Multi-step problems, expect comfort with arrays/strings/functions
+- Level 4-5: Real complexity is expected — nested logic, multiple data structures, algorithms
+- The gap between each level should be clearly noticeable
 - Each assert should test ONE concept clearly
-- Use realistic but simple variable names (age, name, numbers, isValid)
+- Use realistic variable names appropriate to the exercise theme
 - Include a brief comment explaining what each assert tests
 
 EXERCISE STYLE (like Codewars):
@@ -270,50 +279,50 @@ Focus on fundamental concepts appropriate for beginners."
             return level switch
             {
                 1 =>
-    @"LEVEL 1 - ABSOLUTE BEGINNER:
+    @"LEVEL 1 - ABSOLUTE BEGINNER (Codewars 8 kyu):
 - Student just learned what variables are
 - Only test the most basic concepts
 - Use very simple values (small numbers, short strings)
 - Test ONE thing per assertion
 - No tricky edge cases
-- Example: Check if a number equals 5, check if a string equals ""hello""
+- Think Codewars 8 kyu: ""Multiply two numbers"", ""Return string length"", ""Check if number is even""
 - Be encouraging - these are their first steps!",
 
                 2 =>
-    @"LEVEL 2 - GETTING STARTED:
+    @"LEVEL 2 - BEGINNER (Codewars 7 kyu):
 - Student understands basic variables and simple operations
-- Can combine 2 simple concepts
-- Still use straightforward values
-- Introduce basic comparisons (greater than, less than)
-- No complex expressions
-- Example: Check if age > 18, check string length",
+- Can combine 2 concepts together
+- Introduce basic conditionals and simple string/array operations
+- Simple comparisons, basic filtering, straightforward transformations
+- Think Codewars 7 kyu: ""Find the shortest word"", ""Disemvowel a string"", ""Sum of odd numbers""
+- Example: Reverse a string, count vowels, find max in array",
 
                 3 =>
-    @"LEVEL 3 - BUILDING CONFIDENCE:
-- Student is comfortable with basics
-- Can handle slightly more complex assertions
-- Introduce collections (arrays) at basic level
-- Can test simple function outputs
-- Still avoid complex logic
-- Example: Check array length, test function return value",
+    @"LEVEL 3 - INTERMEDIATE (Codewars 6 kyu):
+- Student is comfortable with fundamentals and ready for multi-step problems
+- Array manipulation, string parsing, functions calling functions
+- Multiple conditions, moderate logic chains
+- Think Codewars 6 kyu: ""Decode a morse code"", ""Find the odd int"", ""Create phone number from array""
+- Handle common edge cases (empty input, single element)
+- Example: Parse and transform data, implement a simple cipher, validate formatted strings",
 
                 4 =>
-    @"LEVEL 4 - PROGRESSING WELL:
-- Student can combine multiple concepts
-- Comfortable with arrays, functions, and objects
-- Can handle assertions with 2-3 steps of logic
-- Introduce edge cases gently (empty string, zero)
-- Example: Test array contains value, check object property",
+    @"LEVEL 4 - UPPER INTERMEDIATE (Codewars 5 kyu):
+- Student can work with multiple data structures and combine patterns
+- Nested iteration, helper functions, real-world problem solving
+- Objects and arrays together, data transformation pipelines
+- Think Codewars 5 kyu: ""RGB to Hex"", ""Scramblies"", ""Simple Pig Latin""
+- Include meaningful edge cases and boundary conditions
+- Example: Flatten nested structures, implement encoding/decoding, build a simple parser",
 
                 5 =>
-    @"LEVEL 5 - EARLY INTERMEDIATE:
-- Student has solid foundation but NOT advanced yet
-- Can handle more realistic scenarios
-- Test combinations of concepts
-- Include some edge cases
-- Still NO complex algorithms or patterns
-- Example: Test function with edge case input, verify loop results
-- Remember: They still can't build complex apps!",
+    @"LEVEL 5 - ADVANCED (Codewars 4 kyu):
+- Student is ready for algorithm-style challenges
+- Sorting, searching, basic recursion, complex transformations
+- Multi-function solutions, algorithmic thinking required
+- Think Codewars 4 kyu: ""Snail sort"", ""Strip comments"", ""Range extraction""
+- Must handle all edge cases robustly
+- Example: Implement pathfinding logic, recursive data processing, matrix operations",
 
                 _ => "Focus on beginner-appropriate concepts."
             };
