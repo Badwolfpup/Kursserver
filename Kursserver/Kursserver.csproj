@@ -31,7 +31,8 @@
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 	</ItemGroup>
 	<PropertyGroup>
-		<ReactAppPath>C:\Users\adam_\source\repos\React\kurshemsida</ReactAppPath>
+		<!-- <ReactAppPath>C:\Users\adam_\source\repos\React\kurshemsida</ReactAppPath> -->
+		<ReactAppPath>..\kurshemsida</ReactAppPath>
 	</PropertyGroup>
 
 	<Target Name="CleanReactAssets" BeforeTargets="CopyReactBuild" Condition="'$(Configuration)'=='Release'">
