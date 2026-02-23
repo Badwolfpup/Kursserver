@@ -129,7 +129,7 @@ namespace Kursserver.Endpoints
                 var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
  
             // Allow Admin, Teacher, Student
-                if (userRole != Role.Admin.ToString() && userRole != Role.Teacher.ToString() && userRole != Role.Student.ToString())
+                if (userRole != Role.Admin.ToString() && userRole != Role.Teacher.ToString() && userRole != Role.Coach.ToString() && userRole != Role.Student.ToString())
                 return Results.Forbid();
  
             try
