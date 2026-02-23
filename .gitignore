@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# React frontend (has its own repo)
+kurshemsida/
+
 # User-specific files
 *.rsuser
 *.suo

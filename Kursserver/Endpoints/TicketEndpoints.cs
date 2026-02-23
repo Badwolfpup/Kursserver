@@ -268,6 +268,28 @@ namespace Kursserver.Endpoints
                             suggestion.Ticket.Status = "Closed";
                             suggestion.Ticket.UpdatedAt = DateTime.Now;
                         }
+
+                        // Create a Booking so the slot appears in the admin calendar
+                        // and is blocked for coach scheduling.
+                        var adminId = suggestion.Ticket?.RecipientId;
+                        if (adminId.HasValue)
+                        {
+                            var booking = new Booking
+                            {
+                                AdminId = adminId.Value,
+                                CoachId = adminId.Value,
+                                StudentId = suggestion.Ticket!.SenderId,
+                                AdminAvailabilityId = null,
+                                Note = $"Handledning (ärende #{suggestion.TicketId})",
+                                MeetingType = "session",
+                                StartTime = suggestion.StartTime,
+                                EndTime = suggestion.EndTime,
+                                BookedAt = DateTime.Now,
+                                Seen = false,
+                                Status = "accepted",
+                            };
+                            db.Bookings.Add(booking);
+                        }
                     }
                     else
                     {
