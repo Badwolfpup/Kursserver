@@ -29,5 +29,6 @@ namespace Kursserver.Dto
         public bool? ScheduledWedPm { get; set; }
         public bool? ScheduledThuAm { get; set; }
         public bool? ScheduledThuPm { get; set; }
+        public bool? EmailNotifications { get; set; }
     }
 }

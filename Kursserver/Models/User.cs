@@ -51,5 +51,7 @@ namespace Kursserver.Models
 
         public bool ScheduledThuAm { get; set; } = true;
         public bool ScheduledThuPm { get; set; } = true;
+
+        public bool EmailNotifications { get; set; } = true;
     }
 }
