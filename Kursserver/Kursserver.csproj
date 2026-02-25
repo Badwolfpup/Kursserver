@@ -32,7 +32,7 @@
 	</ItemGroup>
 	<PropertyGroup>
 		<!-- <ReactAppPath>C:\Users\adam_\source\repos\React\kurshemsida</ReactAppPath> -->
-		<ReactAppPath>..\kurshemsida</ReactAppPath>
+		<ReactAppPath>..\..\kurshemsida</ReactAppPath>
 	</PropertyGroup>
 
 	<Target Name="CleanReactAssets" BeforeTargets="CopyReactBuild" Condition="'$(Configuration)'=='Release'">
