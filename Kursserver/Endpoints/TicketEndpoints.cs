@@ -117,19 +117,30 @@ namespace Kursserver.Endpoints
             });
 
             // PUT /api/update-ticket — update status or reassign
-            app.MapPut("/api/update-ticket", [Authorize] async ([FromBody] UpdateTicketDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("/api/update-ticket", [Authorize] async ([FromBody] UpdateTicketDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
                     var ticket = await db.Tickets.FindAsync(dto.Id);
                     if (ticket == null) return Results.NotFound("Ticket not found");
 
+                    var previousStatus = ticket.Status;
                     if (!string.IsNullOrEmpty(dto.Status)) ticket.Status = dto.Status;
                     if (dto.RecipientId.HasValue) ticket.RecipientId = dto.RecipientId.Value;
                     ticket.UpdatedAt = DateTime.Now;
 
                     db.Tickets.Update(ticket);
                     await db.SaveChangesAsync();
+
+                    // Notify sender when ticket is closed
+                    if (dto.Status == "Closed" && previousStatus != "Closed" && ticket.SenderId != null)
+                    {
+                        var sender = await db.Users.FindAsync(ticket.SenderId);
+                        if (sender?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(sender.Email, $"Ärende stängt: {ticket.Subject}",
+                                $"Ditt ärende '{ticket.Subject}' har stängts av handledaren.");
+                    }
+
                     return Results.Ok(ticket);
                 }
                 catch (Exception ex)
