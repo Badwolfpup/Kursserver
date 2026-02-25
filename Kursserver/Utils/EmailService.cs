@@ -50,8 +50,19 @@ namespace Kursserver.Utils
         {
             _ = Task.Run(async () =>
             {
-                try { await SendEmailAsync(toEmail, subject, body); }
+                try
+                {
+                    await _resend.EmailSendAsync(new EmailMessage()
+                    {
+                        From = "noreply@culprogrammering.net",
+                        To = toEmail,
+                        Subject = subject,
+                        HtmlBody = $"<p>{body}</p>",
+                    });
+                }
                 catch { /* silently ignore */ }
+                // try { await SendEmailAsync(toEmail, subject, body); }
+                // catch { /* silently ignore */ }
             });
         }
     }
