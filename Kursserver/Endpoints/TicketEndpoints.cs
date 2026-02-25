@@ -71,7 +71,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST /api/add-ticket
-            app.MapPost("/api/add-ticket", [Authorize] async ([FromBody] AddTicketDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/add-ticket", [Authorize] async ([FromBody] AddTicketDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -97,6 +97,17 @@ namespace Kursserver.Endpoints
 
                     db.Tickets.Add(ticket);
                     await db.SaveChangesAsync();
+
+                    // Notify recipient
+                    if (recipientId.HasValue)
+                    {
+                        var sender = await db.Users.FindAsync(userId);
+                        var recipient = await db.Users.FindAsync(recipientId.Value);
+                        if (recipient?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(recipient.Email, $"Nytt ärende: {dto.Subject}",
+                                $"Du har fått ett nytt ärende från {sender?.FirstName} {sender?.LastName}.\n\n{dto.Message}");
+                    }
+
                     return Results.Created($"/api/fetch-tickets/{ticket.Id}", ticket);
                 }
                 catch (Exception ex)
@@ -181,7 +192,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST /api/add-ticket-reply
-            app.MapPost("/api/add-ticket-reply", [Authorize] async ([FromBody] AddTicketReplyDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/add-ticket-reply", [Authorize] async ([FromBody] AddTicketReplyDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -200,6 +211,20 @@ namespace Kursserver.Endpoints
 
                     db.TicketReplies.Add(reply);
                     await db.SaveChangesAsync();
+
+                    // Notify the other party
+                    if (ticket != null)
+                    {
+                        var otherUserId = (userId == ticket.SenderId) ? ticket.RecipientId : ticket.SenderId;
+                        if (otherUserId.HasValue)
+                        {
+                            var otherUser = await db.Users.FindAsync(otherUserId.Value);
+                            if (otherUser?.EmailNotifications == true)
+                                emailService.SendEmailFireAndForget(otherUser.Email, $"Nytt svar: {ticket.Subject}",
+                                    $"Nytt svar på ärendet '{ticket.Subject}':\n\n{dto.Message}");
+                        }
+                    }
+
                     return Results.Created($"/api/fetch-ticket-replies/{reply.TicketId}", reply);
                 }
                 catch (Exception ex)
@@ -209,7 +234,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST /api/ticket-time-suggestion — admin creates a time suggestion for a ticket
-            app.MapPost("/api/ticket-time-suggestion", [Authorize] async ([FromBody] AddTicketTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/ticket-time-suggestion", [Authorize] async ([FromBody] AddTicketTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -241,6 +266,13 @@ namespace Kursserver.Endpoints
 
                     db.TicketTimeSuggestions.Add(suggestion);
                     await db.SaveChangesAsync();
+
+                    // Notify ticket sender
+                    var sender = await db.Users.FindAsync(ticket.SenderId);
+                    if (sender?.EmailNotifications == true)
+                        emailService.SendEmailFireAndForget(sender.Email, "Tidförslag för ärende",
+                            $"Du har fått ett tidförslag: {suggestion.StartTime:g}–{suggestion.EndTime:t}. Logga in för att svara.");
+
                     return Results.Created($"/api/ticket-time-suggestions/{dto.TicketId}", suggestion);
                 }
                 catch (Exception ex)
@@ -250,7 +282,7 @@ namespace Kursserver.Endpoints
             });
 
             // PUT /api/ticket-time-suggestion/{id}/respond — student accepts or declines
-            app.MapPut("/api/ticket-time-suggestion/{id}/respond", [Authorize] async (int id, [FromBody] RespondToTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("/api/ticket-time-suggestion/{id}/respond", [Authorize] async (int id, [FromBody] RespondToTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -305,6 +337,23 @@ namespace Kursserver.Endpoints
                     }
 
                     await db.SaveChangesAsync();
+
+                    // Notify ticket recipient (admin) of the response
+                    var recipientId = suggestion.Ticket?.RecipientId;
+                    if (recipientId.HasValue)
+                    {
+                        var recipient = await db.Users.FindAsync(recipientId.Value);
+                        if (recipient?.EmailNotifications == true)
+                        {
+                            if (dto.Accept)
+                                emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag accepterat",
+                                    $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har accepterats.");
+                            else
+                                emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag nekat",
+                                    $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har nekats. Anledning: {dto.DeclineReason}");
+                        }
+                    }
+
                     return Results.Ok(suggestion);
                 }
                 catch (Exception ex)

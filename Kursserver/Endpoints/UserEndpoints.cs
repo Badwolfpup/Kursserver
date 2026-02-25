@@ -114,6 +114,7 @@ namespace Kursserver.Endpoints
                     if (dto.ScheduledWedPm.HasValue) user.ScheduledWedPm = dto.ScheduledWedPm.Value;
                     if (dto.ScheduledThuAm.HasValue) user.ScheduledThuAm = dto.ScheduledThuAm.Value;
                     if (dto.ScheduledThuPm.HasValue) user.ScheduledThuPm = dto.ScheduledThuPm.Value;
+                    if (dto.EmailNotifications.HasValue) user.EmailNotifications = dto.EmailNotifications.Value;
 
                     db.Update(user);
                     await db.SaveChangesAsync();
@@ -122,6 +123,26 @@ namespace Kursserver.Endpoints
                 catch (Exception ex)
                 {
                     return Results.Problem("Failed to update user: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            // PUT api/update-my-settings — self-service for all roles (own user only)
+            app.MapPut("api/update-my-settings", [Authorize] async ([FromBody] UpdateMySettingsDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                var userId = new FromClaims().GetUserId(context);
+                var user = await db.Users.FindAsync(userId);
+                if (user == null) return Results.NotFound();
+                try
+                {
+                    if (dto.EmailNotifications.HasValue) user.EmailNotifications = dto.EmailNotifications.Value;
+                    if (!string.IsNullOrEmpty(dto.Telephone)) user.Telephone = dto.Telephone;
+                    db.Update(user);
+                    await db.SaveChangesAsync();
+                    return Results.Ok(user);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to update settings: " + ex.Message, statusCode: 500);
                 }
             });
 

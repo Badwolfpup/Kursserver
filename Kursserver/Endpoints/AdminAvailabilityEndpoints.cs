@@ -155,7 +155,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST book an availability — for coaches, or standalone appointment by admin
-            app.MapPost("/api/admin-availability/book", [Authorize] async (BookAvailabilityDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/admin-availability/book", [Authorize] async (BookAvailabilityDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -228,6 +228,15 @@ namespace Kursserver.Endpoints
                         }
                     }
 
+                    // Notify coach
+                    if (booking.CoachId > 0)
+                    {
+                        var coach = await db.Users.FindAsync(booking.CoachId);
+                        if (coach != null)
+                            emailService.SendEmailFireAndForget(coach.Email, "Ny bokning",
+                                $"Du har blivit inbokad {booking.StartTime:g}–{booking.EndTime:t}. Mötestyp: {booking.MeetingType}.");
+                    }
+
                     return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
                 }
                 catch (Exception ex)
@@ -237,7 +246,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST create standalone appointment — for admin/teacher only
-            app.MapPost("/api/admin-availability/appointments", [Authorize] async (AdminAppointmentDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/admin-availability/appointments", [Authorize] async (AdminAppointmentDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -291,6 +300,15 @@ namespace Kursserver.Endpoints
                     db.Bookings.Add(booking);
                     await db.SaveChangesAsync();
 
+                    // Notify coach
+                    if (booking.CoachId > 0)
+                    {
+                        var coach = await db.Users.FindAsync(booking.CoachId);
+                        if (coach != null)
+                            emailService.SendEmailFireAndForget(coach.Email, "Ny mötesförfrågan",
+                                $"Du har fått en mötesförfrågan {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att bekräfta.");
+                    }
+
                     return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
                 }
                 catch (Exception ex)
@@ -317,7 +335,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST update booking status (accept/decline) — for admin/teacher, or coach responding to a rescheduled booking
-            app.MapPost("/api/admin-availability/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/admin-availability/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -347,6 +365,36 @@ namespace Kursserver.Endpoints
                     booking.Status = dto.Status;
                     booking.Reason = dto.Reason ?? "";
                     await db.SaveChangesAsync();
+
+                    // Send email notification
+                    if (userRole == "Coach")
+                    {
+                        // Coach responded — notify admin
+                        var admin = await db.Users.FindAsync(booking.AdminId);
+                        if (admin?.EmailNotifications == true)
+                        {
+                            var verb = dto.Status == "accepted" ? "bekräftat" : "nekat";
+                            emailService.SendEmailFireAndForget(admin.Email, "Svar på bokning",
+                                $"Coach har {verb} bokning {booking.StartTime:g}.");
+                        }
+                    }
+                    else
+                    {
+                        // Admin responded — notify coach (always send to coaches)
+                        if (booking.CoachId > 0)
+                        {
+                            var coach = await db.Users.FindAsync(booking.CoachId);
+                            if (coach != null)
+                            {
+                                if (dto.Status == "accepted")
+                                    emailService.SendEmailFireAndForget(coach.Email, "Bokning bekräftad",
+                                        $"Din bokning {booking.StartTime:g} har bekräftats.");
+                                else
+                                    emailService.SendEmailFireAndForget(coach.Email, "Bokning nekad",
+                                        $"Din bokning {booking.StartTime:g} har nekats. Anledning: {dto.Reason}");
+                            }
+                        }
+                    }
 
                     // If declining, re-evaluate whether the parent availability is still fully booked
                     if (dto.Status == "declined")
@@ -385,7 +433,7 @@ namespace Kursserver.Endpoints
             });
 
             // POST cancel a booking — accessible by coach (own bookings) or admin/teacher
-            app.MapPost("/api/admin-availability/bookings/{id}/cancel", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPost("/api/admin-availability/bookings/{id}/cancel", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -404,6 +452,25 @@ namespace Kursserver.Endpoints
                     booking.Status = "declined";
                     booking.Reason = dto.Reason ?? "";
                     await db.SaveChangesAsync();
+
+                    // Send email notification to the other party
+                    if (userRole == "Coach")
+                    {
+                        var admin = await db.Users.FindAsync(booking.AdminId);
+                        if (admin?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(admin.Email, "Bokning avbokad",
+                                $"Coach har avbokat bokning {booking.StartTime:g}. Anledning: {dto.Reason}");
+                    }
+                    else
+                    {
+                        if (booking.CoachId > 0)
+                        {
+                            var coach = await db.Users.FindAsync(booking.CoachId);
+                            if (coach != null)
+                                emailService.SendEmailFireAndForget(coach.Email, "Bokning avbokad",
+                                    $"Din bokning {booking.StartTime:g} har avbokats. Anledning: {dto.Reason}");
+                        }
+                    }
 
                     // Re-evaluate whether the parent availability is still fully booked
                     var availability = await db.AdminAvailabilities.FindAsync(booking.AdminAvailabilityId);
@@ -439,7 +506,7 @@ namespace Kursserver.Endpoints
             });
 
             // PUT reschedule a booking — accessible by coach (own) or admin/teacher
-            app.MapPut("/api/admin-availability/bookings/{id}/reschedule", [Authorize] async (int id, UpdateBookingTimesDto dto, ApplicationDbContext db, HttpContext context) =>
+            app.MapPut("/api/admin-availability/bookings/{id}/reschedule", [Authorize] async (int id, UpdateBookingTimesDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
@@ -471,6 +538,25 @@ namespace Kursserver.Endpoints
                     booking.Status = "rescheduled";
                     booking.RescheduledBy = dto.RescheduledBy;
                     await db.SaveChangesAsync();
+
+                    // Send email notification to the other party
+                    if (userRole == "Coach")
+                    {
+                        var admin = await db.Users.FindAsync(booking.AdminId);
+                        if (admin?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(admin.Email, "Bokning ombokas",
+                                $"Coach begär ombokning till {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att godkänna.");
+                    }
+                    else
+                    {
+                        if (booking.CoachId > 0)
+                        {
+                            var coach = await db.Users.FindAsync(booking.CoachId);
+                            if (coach != null)
+                                emailService.SendEmailFireAndForget(coach.Email, "Bokning ombokas",
+                                    $"Din bokning har ombokats till {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att godkänna.");
+                        }
+                    }
 
                     return Results.Ok(booking);
                 }

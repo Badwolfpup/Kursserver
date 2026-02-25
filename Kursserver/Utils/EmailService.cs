@@ -45,5 +45,14 @@ namespace Kursserver.Utils
                 await client.DisconnectAsync(true);
             }
         }
+
+        public void SendEmailFireAndForget(string toEmail, string subject, string body)
+        {
+            _ = Task.Run(async () =>
+            {
+                try { await SendEmailAsync(toEmail, subject, body); }
+                catch { /* silently ignore */ }
+            });
+        }
     }
 }
