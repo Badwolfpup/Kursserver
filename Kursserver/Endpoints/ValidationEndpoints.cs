@@ -14,9 +14,12 @@ namespace Kursserver.Endpoints
 {
     public static class ValidationEndpoints
     {
-        public static readonly ConcurrentDictionary<string, int> passcodeStore = new();
-        public static readonly ConcurrentDictionary<string, int> passcodeAttempts = new();
-        public static readonly ConcurrentDictionary<string, DateTime> passcodeLockout = new();
+        // public static readonly ConcurrentDictionary<string, int> passcodeStore = new();
+        // public static readonly ConcurrentDictionary<string, int> passcodeAttempts = new();
+        // public static readonly ConcurrentDictionary<string, DateTime> passcodeLockout = new();
+        public static readonly ConcurrentDictionary<string, int> passcodeStore = new(StringComparer.OrdinalIgnoreCase);
+        public static readonly ConcurrentDictionary<string, int> passcodeAttempts = new(StringComparer.OrdinalIgnoreCase);
+        public static readonly ConcurrentDictionary<string, DateTime> passcodeLockout = new(StringComparer.OrdinalIgnoreCase);
 
 
         public static void MapValidationEndpoints(this WebApplication app, IConfiguration jwtSettings)
