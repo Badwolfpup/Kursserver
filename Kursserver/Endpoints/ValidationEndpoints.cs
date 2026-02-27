@@ -61,7 +61,7 @@ namespace Kursserver.Endpoints
                     if (passcodeLockout.ContainsKey(dto.Email))
                     {
                         var lockoutTime = passcodeLockout[dto.Email];
-                        if ((DateTime.UtcNow - lockoutTime).TotalMinutes < 15)
+                        if (AuthHelpers.IsLockedOut(lockoutTime, DateTime.UtcNow))
                         {
                             return Results.Problem($"För många försök. Försök igen om {(DateTime.UtcNow - lockoutTime).TotalMinutes.ToString()}");
                         }
@@ -95,7 +95,7 @@ namespace Kursserver.Endpoints
                             issuer: jwtSettings["Issuer"],
                             audience: jwtSettings["Audience"],
                             claims: claims,
-                            expires: DateTime.UtcNow.AddDays((int)user.AuthLevel <= 2 ? 30 : 6),
+                            expires: DateTime.UtcNow.AddDays(AuthHelpers.GetTokenExpiryDays((int)user.AuthLevel)),
                             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
                         );
                         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
@@ -108,7 +108,7 @@ namespace Kursserver.Endpoints
                         };
                         if (dto.RememberMe)
                         {
-                            cookieOptions.Expires = DateTimeOffset.UtcNow.AddDays((int)user.AuthLevel <= 2 ? 30 : 6);
+                            cookieOptions.Expires = DateTimeOffset.UtcNow.AddDays(AuthHelpers.GetTokenExpiryDays((int)user.AuthLevel));
                         }
                         httpContext.Response.Cookies.Append("jwt", tokenString, cookieOptions);
                         return Results.Ok(new

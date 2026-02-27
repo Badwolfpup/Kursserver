@@ -210,18 +210,11 @@ namespace Kursserver.Endpoints
                         var allBookings = await db.Bookings
                             .Where(b => b.AdminAvailabilityId == dto.AdminAvailabilityId && b.Status != "declined")
                             .OrderBy(b => b.StartTime)
+                            .Select(b => new { b.StartTime, b.EndTime })
                             .ToListAsync();
 
-                        var coveredStart = availability.StartTime;
-                        var fullyCovered = true;
-                        foreach (var b in allBookings)
-                        {
-                            if (b.StartTime > coveredStart) { fullyCovered = false; break; }
-                            if (b.EndTime > coveredStart) coveredStart = b.EndTime;
-                        }
-                        if (coveredStart < availability.EndTime) fullyCovered = false;
-
-                        if (fullyCovered)
+                        if (ScheduleHelpers.IsFullyBooked(availability.StartTime, availability.EndTime,
+                            allBookings.Select(b => (b.StartTime, b.EndTime))))
                         {
                             availability.IsBooked = true;
                             await db.SaveChangesAsync();
@@ -405,18 +398,11 @@ namespace Kursserver.Endpoints
                             var activeBookings = await db.Bookings
                                 .Where(b => b.AdminAvailabilityId == booking.AdminAvailabilityId && b.Status != "declined")
                                 .OrderBy(b => b.StartTime)
+                                .Select(b => new { b.StartTime, b.EndTime })
                                 .ToListAsync();
 
-                            var coveredStart = availability.StartTime;
-                            var fullyCovered = true;
-                            foreach (var b in activeBookings)
-                            {
-                                if (b.StartTime > coveredStart) { fullyCovered = false; break; }
-                                if (b.EndTime > coveredStart) coveredStart = b.EndTime;
-                            }
-                            if (coveredStart < availability.EndTime) fullyCovered = false;
-
-                            if (!fullyCovered)
+                            if (!ScheduleHelpers.IsFullyBooked(availability.StartTime, availability.EndTime,
+                                activeBookings.Select(b => (b.StartTime, b.EndTime))))
                             {
                                 availability.IsBooked = false;
                                 await db.SaveChangesAsync();
@@ -479,18 +465,11 @@ namespace Kursserver.Endpoints
                         var activeBookings = await db.Bookings
                             .Where(b => b.AdminAvailabilityId == booking.AdminAvailabilityId && b.Status != "declined")
                             .OrderBy(b => b.StartTime)
+                            .Select(b => new { b.StartTime, b.EndTime })
                             .ToListAsync();
 
-                        var coveredStart = availability.StartTime;
-                        var fullyCovered = true;
-                        foreach (var b in activeBookings)
-                        {
-                            if (b.StartTime > coveredStart) { fullyCovered = false; break; }
-                            if (b.EndTime > coveredStart) coveredStart = b.EndTime;
-                        }
-                        if (coveredStart < availability.EndTime) fullyCovered = false;
-
-                        if (!fullyCovered)
+                        if (!ScheduleHelpers.IsFullyBooked(availability.StartTime, availability.EndTime,
+                            activeBookings.Select(b => (b.StartTime, b.EndTime))))
                         {
                             availability.IsBooked = false;
                             await db.SaveChangesAsync();
