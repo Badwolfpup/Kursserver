@@ -57,6 +57,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Admin permanently deletes an inactive user
+            /// CALLS: useDeleteUser() → userService.deleteUser()
+            /// SIDE EFFECTS:
+            ///   - Nullifies ContactId on all users referencing the deleted user
+            ///   - Removes user from database
+            /// </summary>
             app.MapDelete("api/delete-user/", [Authorize] async ([FromBody] DeleteUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try

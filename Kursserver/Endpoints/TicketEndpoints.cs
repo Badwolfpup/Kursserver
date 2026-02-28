@@ -54,7 +54,8 @@ namespace Kursserver.Endpoints
                         HasPendingSuggestion = db.TicketTimeSuggestions
                             .Any(s => s.TicketId == t.Id && s.Status == "pending"),
                         HasUnread = !db.TicketViews.Any(v => v.UserId == userId && v.TicketId == t.Id)
-                            ? db.TicketReplies.Any(r => r.TicketId == t.Id && r.SenderId != userId)
+                            ? t.SenderId != userId
+                              || db.TicketReplies.Any(r => r.TicketId == t.Id && r.SenderId != userId)
                               || db.TicketTimeSuggestions.Any(s => s.TicketId == t.Id && s.SuggestedById != userId)
                             : db.TicketReplies.Any(r => r.TicketId == t.Id && r.SenderId != userId
                                 && r.CreatedAt > db.TicketViews.Where(v => v.UserId == userId && v.TicketId == t.Id).Select(v => v.LastViewedAt).First())
@@ -98,8 +99,8 @@ namespace Kursserver.Endpoints
                     db.Tickets.Add(ticket);
                     await db.SaveChangesAsync();
 
-                    // Notify recipient
-                    if (recipientId.HasValue)
+                    // Notify recipient (skip in dev)
+                    if (!app.Environment.IsDevelopment() && recipientId.HasValue)
                     {
                         var sender = await db.Users.FindAsync(userId);
                         var recipient = await db.Users.FindAsync(recipientId.Value);
@@ -132,8 +133,8 @@ namespace Kursserver.Endpoints
                     db.Tickets.Update(ticket);
                     await db.SaveChangesAsync();
 
-                    // Notify sender when ticket is closed
-                    if (dto.Status == "Closed" && previousStatus != "Closed" && ticket.SenderId != null)
+                    // Notify sender when ticket is closed (skip in dev)
+                    if (!app.Environment.IsDevelopment() && dto.Status == "Closed" && previousStatus != "Closed" && ticket.SenderId != null)
                     {
                         var sender = await db.Users.FindAsync(ticket.SenderId);
                         if (sender?.EmailNotifications == true)
@@ -223,8 +224,8 @@ namespace Kursserver.Endpoints
                     db.TicketReplies.Add(reply);
                     await db.SaveChangesAsync();
 
-                    // Notify the other party
-                    if (ticket != null)
+                    // Notify the other party (skip in dev)
+                    if (!app.Environment.IsDevelopment() && ticket != null)
                     {
                         var otherUserId = (userId == ticket.SenderId) ? ticket.RecipientId : ticket.SenderId;
                         if (otherUserId.HasValue)
@@ -278,11 +279,14 @@ namespace Kursserver.Endpoints
                     db.TicketTimeSuggestions.Add(suggestion);
                     await db.SaveChangesAsync();
 
-                    // Notify ticket sender
-                    var sender = await db.Users.FindAsync(ticket.SenderId);
-                    if (sender?.EmailNotifications == true)
-                        emailService.SendEmailFireAndForget(sender.Email, "Tidförslag för ärende",
-                            $"Du har fått ett tidförslag: {suggestion.StartTime:g}–{suggestion.EndTime:t}. Logga in för att svara.");
+                    // Notify ticket sender (skip in dev)
+                    if (!app.Environment.IsDevelopment())
+                    {
+                        var sender = await db.Users.FindAsync(ticket.SenderId);
+                        if (sender?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(sender.Email, "Tidförslag för ärende",
+                                $"Du har fått ett tidförslag: {suggestion.StartTime:g}–{suggestion.EndTime:t}. Logga in för att svara.");
+                    }
 
                     return Results.Created($"/api/ticket-time-suggestions/{dto.TicketId}", suggestion);
                 }
@@ -349,19 +353,22 @@ namespace Kursserver.Endpoints
 
                     await db.SaveChangesAsync();
 
-                    // Notify ticket recipient (admin) of the response
-                    var recipientId = suggestion.Ticket?.RecipientId;
-                    if (recipientId.HasValue)
+                    // Notify ticket recipient (admin) of the response (skip in dev)
+                    if (!app.Environment.IsDevelopment())
                     {
-                        var recipient = await db.Users.FindAsync(recipientId.Value);
-                        if (recipient?.EmailNotifications == true)
+                        var recipientId = suggestion.Ticket?.RecipientId;
+                        if (recipientId.HasValue)
                         {
-                            if (dto.Accept)
-                                emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag accepterat",
-                                    $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har accepterats.");
-                            else
-                                emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag nekat",
-                                    $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har nekats. Anledning: {dto.DeclineReason}");
+                            var recipient = await db.Users.FindAsync(recipientId.Value);
+                            if (recipient?.EmailNotifications == true)
+                            {
+                                if (dto.Accept)
+                                    emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag accepterat",
+                                        $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har accepterats.");
+                                else
+                                    emailService.SendEmailFireAndForget(recipient.Email, "Tidförslag nekat",
+                                        $"Tidförslaget {suggestion.StartTime:g}–{suggestion.EndTime:t} har nekats. Anledning: {dto.DeclineReason}");
+                            }
                         }
                     }
 
