@@ -9,6 +9,12 @@ namespace Kursserver.Endpoints
 {
     public static class TicketEndpoints
     {
+        private static bool IsAdminOrTeacher(HttpContext context)
+        {
+            var role = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            return role == Role.Admin.ToString() || role == Role.Teacher.ToString();
+        }
+
         public static void MapTicketEndpoints(this WebApplication app)
         {
             // GET /api/fetch-tickets — admin/teacher sees all, coach sees own
@@ -117,11 +123,23 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Admin or teacher updates a ticket's status or reassigns it
+            /// CALLS: useUpdateTicket() → ticketService.updateTicket() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Sets Status on Ticket if provided
+            ///   - Sets RecipientId on Ticket if provided
+            ///   - Sends email to sender if status changed to Closed (EmailService)
+            ///   - Restricted to Admin/Teacher — students cannot update ticket status
+            /// </summary>
             // PUT /api/update-ticket — update status or reassign
             app.MapPut("/api/update-ticket", [Authorize] async ([FromBody] UpdateTicketDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
                     var ticket = await db.Tickets.FindAsync(dto.Id);
                     if (ticket == null) return Results.NotFound("Ticket not found");
 
@@ -176,11 +194,24 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Ticket party or Admin/Teacher fetches all replies for a ticket
+            /// CALLS: useTicketReplies() → ticketService.fetchReplies() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Returns 404 if ticket does not exist
+            ///   - Returns 403 if caller is not the sender, recipient, Admin, or Teacher
+            /// </summary>
             // GET /api/fetch-ticket-replies/{ticketId}
-            app.MapGet("/api/fetch-ticket-replies/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db) =>
+            app.MapGet("/api/fetch-ticket-replies/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
+                    var userId = new FromClaims().GetUserId(context);
+                    var ticket = await db.Tickets.FindAsync(ticketId);
+                    if (ticket == null) return Results.NotFound("Ticket not found");
+                    if (!IsAdminOrTeacher(context) && ticket.SenderId != userId && ticket.RecipientId != userId)
+                        return Results.Forbid();
+
                     var replies = await db.TicketReplies
                         .Where(r => r.TicketId == ticketId)
                         .Include(r => r.Sender)
@@ -203,12 +234,26 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Ticket party or Admin/Teacher adds a reply to a ticket
+            /// CALLS: useAddTicketReply() → ticketService.addReply() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Creates TicketReply record
+            ///   - Updates Ticket.UpdatedAt
+            ///   - Sends email to the other party (EmailService)
+            ///   - Returns 404 if ticket not found; 403 if caller is not sender, recipient, Admin, or Teacher
+            /// </summary>
             // POST /api/add-ticket-reply
             app.MapPost("/api/add-ticket-reply", [Authorize] async ([FromBody] AddTicketReplyDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
                     var userId = new FromClaims().GetUserId(context);
+
+                    var ticket = await db.Tickets.FindAsync(dto.TicketId);
+                    if (ticket == null) return Results.NotFound("Ticket not found");
+                    if (!IsAdminOrTeacher(context) && ticket.SenderId != userId && ticket.RecipientId != userId)
+                        return Results.Forbid();
 
                     var reply = new TicketReply
                     {
@@ -218,14 +263,13 @@ namespace Kursserver.Endpoints
                     };
 
                     // Update ticket timestamp
-                    var ticket = await db.Tickets.FindAsync(dto.TicketId);
-                    if (ticket != null) ticket.UpdatedAt = DateTime.Now;
+                    ticket.UpdatedAt = DateTime.Now;
 
                     db.TicketReplies.Add(reply);
                     await db.SaveChangesAsync();
 
                     // Notify the other party (skip in dev)
-                    if (!app.Environment.IsDevelopment() && ticket != null)
+                    if (!app.Environment.IsDevelopment())
                     {
                         var otherUserId = (userId == ticket.SenderId) ? ticket.RecipientId : ticket.SenderId;
                         if (otherUserId.HasValue)
@@ -296,15 +340,28 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Ticket sender (student) accepts or declines a time suggestion
+            /// CALLS: useRespondToSuggestion() → ticketService.respondToSuggestion() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Sets TicketTimeSuggestion.Status = "accepted" or "declined"
+            ///   - On accept: sets Ticket.Status = "Closed", creates Booking record
+            ///   - On decline: sets TicketTimeSuggestion.DeclineReason
+            ///   - Sends email to ticket recipient (admin) (EmailService)
+            ///   - Returns 404 if suggestion not found; 403 if caller is not the ticket sender
+            /// </summary>
             // PUT /api/ticket-time-suggestion/{id}/respond — student accepts or declines
             app.MapPut("/api/ticket-time-suggestion/{id}/respond", [Authorize] async (int id, [FromBody] RespondToTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
                 try
                 {
+                    var userId = new FromClaims().GetUserId(context);
+
                     var suggestion = await db.TicketTimeSuggestions
                         .Include(s => s.Ticket)
                         .FirstOrDefaultAsync(s => s.Id == id);
                     if (suggestion == null) return Results.NotFound("Suggestion not found");
+                    if (suggestion.Ticket?.SenderId != userId) return Results.Forbid();
                     if (suggestion.Status != "pending") return Results.BadRequest("Suggestion is no longer pending");
 
                     if (dto.Accept)
@@ -380,11 +437,24 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Ticket party or Admin/Teacher fetches all time suggestions for a ticket
+            /// CALLS: useTicketTimeSuggestions() → ticketService.fetchSuggestions() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Returns 404 if ticket does not exist
+            ///   - Returns 403 if caller is not the sender, recipient, Admin, or Teacher
+            /// </summary>
             // GET /api/ticket-time-suggestions/{ticketId} — get all suggestions for a ticket
-            app.MapGet("/api/ticket-time-suggestions/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db) =>
+            app.MapGet("/api/ticket-time-suggestions/{ticketId}", [Authorize] async (int ticketId, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
+                    var userId = new FromClaims().GetUserId(context);
+                    var ticket = await db.Tickets.FindAsync(ticketId);
+                    if (ticket == null) return Results.NotFound("Ticket not found");
+                    if (!IsAdminOrTeacher(context) && ticket.SenderId != userId && ticket.RecipientId != userId)
+                        return Results.Forbid();
+
                     var suggestions = await db.TicketTimeSuggestions
                         .Where(s => s.TicketId == ticketId)
                         .Include(s => s.SuggestedBy)
