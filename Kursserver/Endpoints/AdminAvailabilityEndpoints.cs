@@ -142,8 +142,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            // DELETE availability — for admin/teacher
-            // Refuses if there are accepted bookings; declines pending/rescheduled ones first
+            /// <summary>
+            /// SCENARIO: Admin/Teacher deletes an availability slot; any linked bookings are left as-is (orphaned)
+            /// CALLS: useDeleteAvailability() → adminAvailabilityService.delete() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Removes the AdminAvailability record
+            ///   - Does NOT modify linked Booking records — they remain in the database with their existing status
+            /// </summary>
             app.MapDelete("/api/admin-availability/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
@@ -153,20 +158,6 @@ namespace Kursserver.Endpoints
 
                     var availability = await db.AdminAvailabilities.FindAsync(id);
                     if (availability == null) return Results.NotFound("Availability not found");
-
-                    var relatedBookings = await db.Bookings
-                        .Where(b => b.AdminAvailabilityId == id)
-                        .ToListAsync();
-
-                    if (relatedBookings.Any(b => b.Status == "accepted"))
-                        return Results.BadRequest("Kan inte ta bort: det finns godkända bokningar");
-
-                    // Decline any pending/rescheduled bookings
-                    foreach (var b in relatedBookings.Where(b => b.Status != "declined"))
-                    {
-                        b.Status = "declined";
-                        b.Reason = "Tillgängligheten togs bort";
-                    }
 
                     db.AdminAvailabilities.Remove(availability);
                     await db.SaveChangesAsync();
