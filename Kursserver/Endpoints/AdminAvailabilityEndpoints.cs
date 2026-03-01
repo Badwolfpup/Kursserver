@@ -64,7 +64,14 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            // POST add availability — for admin/teacher
+            /// <summary>
+            /// SCENARIO: Admin/Teacher adds an availability slot; adjacent or overlapping slots for the same admin are merged into one
+            /// CALLS: useAddAvailability() → adminAvailabilityService.add() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - If new slot overlaps or is adjacent to existing unbooked slot(s) for the same AdminId, all touching unbooked slots are deleted and replaced with one merged slot
+            ///   - Slots with IsBooked = true (accepted bookings) are never touched by the merge
+            ///   - If no unbooked overlap, inserts new slot as-is
+            /// </summary>
             app.MapPost("/api/admin-availability/add", [Authorize] async (AddAvailabilityDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 try
@@ -72,11 +79,29 @@ namespace Kursserver.Endpoints
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                     if (accessCheck != null) return accessCheck;
 
+                    // Find existing slots for this admin that overlap or are adjacent to the new slot
+                    var touching = await db.AdminAvailabilities
+                        .Where(a => a.AdminId == dto.AdminId
+                                 && !a.IsBooked
+                                 && a.StartTime <= dto.EndTime
+                                 && a.EndTime >= dto.StartTime)
+                        .ToListAsync();
+
+                    DateTime mergedStart = dto.StartTime;
+                    DateTime mergedEnd = dto.EndTime;
+
+                    if (touching.Count > 0)
+                    {
+                        mergedStart = touching.Min(a => a.StartTime) < dto.StartTime ? touching.Min(a => a.StartTime) : dto.StartTime;
+                        mergedEnd = touching.Max(a => a.EndTime) > dto.EndTime ? touching.Max(a => a.EndTime) : dto.EndTime;
+                        db.AdminAvailabilities.RemoveRange(touching);
+                    }
+
                     var availability = new AdminAvailability
                     {
                         AdminId = dto.AdminId,
-                        StartTime = dto.StartTime,
-                        EndTime = dto.EndTime,
+                        StartTime = mergedStart,
+                        EndTime = mergedEnd,
                         IsBooked = false
                     };
 
