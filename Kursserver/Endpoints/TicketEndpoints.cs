@@ -348,7 +348,7 @@ namespace Kursserver.Endpoints
             ///   - On accept: sets Ticket.Status = "Closed", creates Booking record
             ///   - On decline: sets TicketTimeSuggestion.DeclineReason
             ///   - Sends email to ticket recipient (admin) (EmailService)
-            ///   - Returns 404 if suggestion not found; 403 if caller is not the ticket sender
+            ///   - Returns 404 if suggestion or its ticket not found; 403 if caller is not the ticket sender
             /// </summary>
             // PUT /api/ticket-time-suggestion/{id}/respond — student accepts or declines
             app.MapPut("/api/ticket-time-suggestion/{id}/respond", [Authorize] async (int id, [FromBody] RespondToTimeSuggestionDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
@@ -361,7 +361,8 @@ namespace Kursserver.Endpoints
                         .Include(s => s.Ticket)
                         .FirstOrDefaultAsync(s => s.Id == id);
                     if (suggestion == null) return Results.NotFound("Suggestion not found");
-                    if (suggestion.Ticket?.SenderId != userId) return Results.Forbid();
+                    if (suggestion.Ticket == null) return Results.NotFound("Ticket not found");
+                    if (suggestion.Ticket.SenderId != userId) return Results.Forbid();
                     if (suggestion.Status != "pending") return Results.BadRequest("Suggestion is no longer pending");
 
                     if (dto.Accept)
