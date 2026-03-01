@@ -72,8 +72,20 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyHeader()
               .AllowAnyMethod()
-              .SetIsOriginAllowed(_ => true) // Allow any origin
               .AllowCredentials();
+
+        if (builder.Environment.IsDevelopment())
+        {
+            // Dev: allow any origin so the Vite dev server (different port) works
+            policy.SetIsOriginAllowed(_ => true);
+        }
+        else
+        {
+            // Production: restrict to the configured frontend origin
+            var allowedOrigin = builder.Configuration["AllowedOrigin"]
+                ?? throw new InvalidOperationException("AllowedOrigin must be set in appsettings.json for production");
+            policy.WithOrigins(allowedOrigin);
+        }
     });
 });
 
@@ -120,7 +132,6 @@ app.UseAuthorization();
 
 // Enable authentication and authorization middleware
 app.MapAttendanceEndpoints();
-app.MapPermissionEndpoints();
 app.MapPostEndpoints();
 app.MapUserEndpoints();
 app.MapUtilityEndpoints();

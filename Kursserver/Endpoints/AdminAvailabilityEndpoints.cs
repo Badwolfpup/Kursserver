@@ -154,6 +154,15 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Coach, Teacher, or Admin books a time slot from an availability
+            /// CALLS: useBookAvailability() → availabilityService.book() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Creates Booking record
+            ///   - Marks AdminAvailability.IsBooked = true if fully booked (ScheduleHelpers.IsFullyBooked)
+            ///   - Sends email to booked coach (EmailService)
+            ///   - Coach callers: CoachId is enforced to caller's own ID; StudentId must belong to one of their students (403 otherwise)
+            /// </summary>
             // POST book an availability — for coaches, or standalone appointment by admin
             app.MapPost("/api/admin-availability/book", [Authorize] async (BookAvailabilityDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
@@ -161,6 +170,22 @@ namespace Kursserver.Endpoints
                 {
                     var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
                     if (accessCheck != null) return accessCheck;
+
+                    var userId = int.Parse(context.User.FindFirst("id")!.Value);
+                    var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+                    // Coaches may only book as themselves and only for their own students
+                    if (userRole == Role.Coach.ToString())
+                    {
+                        if (dto.CoachId != userId)
+                            return Results.Forbid();
+                        if (dto.StudentId.HasValue)
+                        {
+                            var student = await db.Users.FindAsync(dto.StudentId.Value);
+                            if (student == null || student.CoachId != userId)
+                                return Results.Forbid();
+                        }
+                    }
 
                     if (dto.StartTime >= dto.EndTime)
                         return Results.BadRequest("Invalid time range");
@@ -183,8 +208,6 @@ namespace Kursserver.Endpoints
                             b.StartTime < dto.EndTime && b.EndTime > dto.StartTime);
                         if (hasOverlap) return Results.BadRequest("This time range overlaps with an existing booking");
                     }
-
-                    var userId = int.Parse(context.User.FindFirst("id")!.Value);
 
                     var booking = new Booking
                     {
