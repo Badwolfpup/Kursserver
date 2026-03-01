@@ -568,6 +568,85 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Coach suggests a meeting with an admin for a time outside of admin availability
+            /// CALLS: createCoachAppointment() → BookingService (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Creates Booking with Status = "pending", CoachId = caller, AdminId = dto.AdminId
+            ///   - Returns 409 conflict if accepted booking overlaps; 409 warning if pending booking overlaps (unless Force=true)
+            ///   - Sends email to the admin if EmailNotifications = true
+            /// </summary>
+            app.MapPost("/api/admin-availability/coach-appointments", [Authorize] async (CoachAppointmentDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 3);
+                    if (accessCheck != null) return accessCheck;
+
+                    if (dto.StartTime >= dto.EndTime)
+                        return Results.BadRequest("Invalid time range");
+
+                    var coachId = int.Parse(context.User.FindFirst("id")!.Value);
+
+                    // Check admin conflicts
+                    var adminConflicts = await db.Bookings
+                        .Where(b => b.AdminId == dto.AdminId
+                                 && b.Status != "declined"
+                                 && b.StartTime < dto.EndTime
+                                 && b.EndTime > dto.StartTime)
+                        .ToListAsync();
+
+                    // Check coach's own conflicts
+                    var coachConflicts = await db.Bookings
+                        .Where(b => b.CoachId == coachId
+                                 && b.Status != "declined"
+                                 && b.StartTime < dto.EndTime
+                                 && b.EndTime > dto.StartTime)
+                        .ToListAsync();
+
+                    var allConflicts = adminConflicts.Union(coachConflicts).DistinctBy(b => b.Id).ToList();
+
+                    if (allConflicts.Any(b => b.Status == "accepted"))
+                        return Results.Conflict(new { type = "conflict", bookings = allConflicts.Where(b => b.Status == "accepted").ToList() });
+
+                    if (!dto.Force && allConflicts.Any(b => b.Status == "pending" || b.Status == "rescheduled"))
+                        return Results.Conflict(new { type = "warning", bookings = allConflicts.Where(b => b.Status != "declined").ToList() });
+
+                    var booking = new Booking
+                    {
+                        AdminId = dto.AdminId,
+                        CoachId = coachId,
+                        StudentId = dto.StudentId,
+                        AdminAvailabilityId = null,
+                        Note = dto.Note,
+                        MeetingType = dto.MeetingType,
+                        StartTime = dto.StartTime,
+                        EndTime = dto.EndTime,
+                        BookedAt = DateTime.Now,
+                        Seen = false,
+                        Status = "pending"
+                    };
+
+                    db.Bookings.Add(booking);
+                    await db.SaveChangesAsync();
+
+                    // Notify admin
+                    if (!app.Environment.IsDevelopment())
+                    {
+                        var admin = await db.Users.FindAsync(dto.AdminId);
+                        if (admin?.EmailNotifications == true)
+                            emailService.SendEmailFireAndForget(admin.Email, "Ny mötesförfrågan från coach",
+                                $"Du har fått en mötesförfrågan {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att bekräfta.");
+                    }
+
+                    return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to create coach appointment: " + ex.Message, statusCode: 500);
+                }
+            });
+
             // GET bookings visible to coaches (all future bookings on availabilities they can see)
             app.MapGet("/api/admin-availability/bookings/visible", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
