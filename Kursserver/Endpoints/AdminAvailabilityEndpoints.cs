@@ -142,8 +142,13 @@ namespace Kursserver.Endpoints
                 }
             });
 
-            // DELETE availability — for admin/teacher
-            // Removes the slot; related bookings are left as-is (orphaned)
+            /// <summary>
+            /// SCENARIO: Admin/Teacher deletes an availability slot; any linked bookings are left as-is (orphaned)
+            /// CALLS: useDeleteAvailability() → adminAvailabilityService.delete() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Removes the AdminAvailability record
+            ///   - Does NOT modify linked Booking records — they remain in the database with their existing status
+            /// </summary>
             app.MapDelete("/api/admin-availability/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
