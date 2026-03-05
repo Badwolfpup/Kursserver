@@ -35,7 +35,7 @@ namespace Kursserver.Utils
             message.From.Add(new MailboxAddress("noreply@culprogrammering.se", _config["Smtp:Username"]));
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = subject;
-            message.Body = new TextPart("plain") { Text = body };
+            message.Body = new TextPart("plain") { Text = $"OBS! Detta är ett automatiskt emailutskick. Du kan inte svara på det.\n---\n\n{body}" };
 
             using (var client = new SmtpClient())
             {
@@ -57,7 +57,7 @@ namespace Kursserver.Utils
                         From = "noreply@culprogrammering.net",
                         To = toEmail,
                         Subject = subject,
-                        HtmlBody = $"<p>{body}</p>",
+                        HtmlBody = $"<p style=\"color:#c00;font-weight:bold;\">OBS! Detta är ett automatiskt emailutskick. Du kan inte svara på det.</p><hr/><p>{body}</p>",
                     });
                 }
                 catch { /* silently ignore */ }
