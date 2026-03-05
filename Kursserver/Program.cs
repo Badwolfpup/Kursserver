@@ -145,6 +145,7 @@ app.MapDeepSeekEndpoints();
 app.MapGrokEndpoints();
 app.MapTicketEndpoints();
 app.MapAdminAvailabilityEndpoints();
+app.MapHelpbotEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");
