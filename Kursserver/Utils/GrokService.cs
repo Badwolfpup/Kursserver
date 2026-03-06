@@ -16,6 +16,19 @@ namespace Kursserver.Utils
                 ?? throw new ArgumentNullException("Grok API key is required");
         }
 
+        public async Task<string> GetChatCompletionAsync(GrokMessage[] messages, string model = "grok-3-mini-fast")
+        {
+            var request = new GrokRequest
+            {
+                Model = model,
+                Messages = messages,
+                Temperature = 0.7,
+                MaxTokens = 1000
+            };
+
+            return await SendRequestAsync(request);
+        }
+
         public async Task<string> GetCompletionAsync(string prompt, string model = "grok-code-fast-1")
         {
             var request = new GrokRequest
