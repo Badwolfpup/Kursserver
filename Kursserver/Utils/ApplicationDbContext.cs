@@ -20,12 +20,10 @@ namespace Kursserver.Utils
         public DbSet<ExerciseHistory> ExerciseHistories { get; set; }
         public DbSet<ProjectHistory> ProjectHistories { get; set; }
 
-        public DbSet<Ticket> Tickets { get; set; }
-        public DbSet<TicketReply> TicketReplies { get; set; }
-
-        public DbSet<TicketTimeSuggestion> TicketTimeSuggestions { get; set; }
-
-        public DbSet<TicketView> TicketViews { get; set; }
+        public DbSet<Models.Thread> Threads { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<Models.ThreadView> ThreadViews { get; set; }
+        public DbSet<BugReport> BugReports { get; set; }
 
         public DbSet<AdminAvailability> AdminAvailabilities { get; set; }
         public DbSet<Booking> Bookings { get; set; }
@@ -85,57 +83,70 @@ namespace Kursserver.Utils
             modelBuilder.Entity<ProjectHistory>()
                 .HasIndex(p => new { p.UserId, p.TechStack });
 
-            modelBuilder.Entity<Ticket>()
-                .HasOne(t => t.Sender)
+            // Thread relationships
+            modelBuilder.Entity<Models.Thread>()
+                .HasOne(t => t.User1)
                 .WithMany()
-                .HasForeignKey(t => t.SenderId)
+                .HasForeignKey(t => t.User1Id)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<Ticket>()
-                .HasOne(t => t.Recipient)
+            modelBuilder.Entity<Models.Thread>()
+                .HasOne(t => t.User2)
                 .WithMany()
-                .HasForeignKey(t => t.RecipientId)
+                .HasForeignKey(t => t.User2Id)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<TicketReply>()
-                .HasOne(r => r.Ticket)
+            modelBuilder.Entity<Models.Thread>()
+                .HasOne(t => t.StudentContext)
                 .WithMany()
-                .HasForeignKey(r => r.TicketId)
+                .HasForeignKey(t => t.StudentContextId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Models.Thread>()
+                .Property<int>("StudentContextIdForUnique")
+                .HasComputedColumnSql("COALESCE(StudentContextId, 0)");
+
+            modelBuilder.Entity<Models.Thread>()
+                .HasIndex("User1Id", "User2Id", "StudentContextIdForUnique")
+                .IsUnique();
+
+            // Message relationships
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Thread)
+                .WithMany()
+                .HasForeignKey(m => m.ThreadId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<TicketReply>()
-                .HasOne(r => r.Sender)
+            modelBuilder.Entity<Message>()
+                .HasOne(m => m.Sender)
                 .WithMany()
-                .HasForeignKey(r => r.SenderId)
+                .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<TicketTimeSuggestion>()
-                .HasOne(s => s.Ticket)
+            // ThreadView relationships
+            modelBuilder.Entity<Models.ThreadView>()
+                .HasOne(v => v.Thread)
                 .WithMany()
-                .HasForeignKey(s => s.TicketId)
+                .HasForeignKey(v => v.ThreadId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<TicketTimeSuggestion>()
-                .HasOne(s => s.SuggestedBy)
-                .WithMany()
-                .HasForeignKey(s => s.SuggestedById)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<TicketView>()
-                .HasOne(v => v.Ticket)
-                .WithMany()
-                .HasForeignKey(v => v.TicketId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<TicketView>()
+            modelBuilder.Entity<Models.ThreadView>()
                 .HasOne(v => v.User)
                 .WithMany()
                 .HasForeignKey(v => v.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<TicketView>()
-                .HasIndex(v => new { v.UserId, v.TicketId })
+            modelBuilder.Entity<Models.ThreadView>()
+                .HasIndex(v => new { v.UserId, v.ThreadId })
                 .IsUnique();
+
+            // BugReport relationships
+            modelBuilder.Entity<BugReport>()
+                .HasOne(b => b.Sender)
+                .WithMany()
+                .HasForeignKey(b => b.SenderId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<AdminAvailability>()
                 .HasOne(a => a.Admin)
