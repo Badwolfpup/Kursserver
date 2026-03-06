@@ -10,11 +10,13 @@ namespace Kursserver.Utils
     {
         private readonly IConfiguration _config;
         private readonly IResend _resend;
+        private readonly bool _isDevelopment;
 
-        public EmailService(IConfiguration config, IResend resend)
+        public EmailService(IConfiguration config, IResend resend, IWebHostEnvironment env)
         {
             _config = config;
             _resend = resend;
+            _isDevelopment = env.IsDevelopment();
         }
 
         public async Task ResendEmailAsync(string toEmail, int passcode)
@@ -48,6 +50,7 @@ namespace Kursserver.Utils
 
         public void SendEmailFireAndForget(string toEmail, string subject, string body)
         {
+            if (_isDevelopment) return;
             _ = Task.Run(async () =>
             {
                 try

@@ -10,15 +10,12 @@ namespace Kursserver.Endpoints
         public static void MapNoClassEndpoints(this WebApplication app)
         {
             /// <summary>
-            /// SCENARIO: Admin, Teacher, or Coach fetches all no-class dates
+            /// SCENARIO: Any authenticated user fetches all no-class dates
             /// CALLS: useNoClass() → noClassService.fetchDates() (kurshemsida)
-            /// SIDE EFFECTS:
-            ///   - Returns 403 if caller is not Admin, Teacher, or Coach
+            /// SIDE EFFECTS: none (read-only)
             /// </summary>
-            app.MapGet("api/noclass", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
+            app.MapGet("api/noclass", [Authorize] async (ApplicationDbContext db) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
-                if (accessCheck != null) return accessCheck;
                 return Results.Ok(await db.NoClasses.ToListAsync());
             });
 

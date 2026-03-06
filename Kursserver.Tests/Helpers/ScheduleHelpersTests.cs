@@ -75,4 +75,28 @@ public class ScheduleHelpersTests
         var bookings = new[] { (T(10), T(11)), (T(9), T(10)) };
         ScheduleHelpers.IsFullyBooked(T(9), T(11), bookings).Should().BeTrue();
     }
+
+    [Fact]
+    public void IsFullyBooked_OverlappingBookingsCoveringAll_ReturnsTrue()
+    {
+        // First booking runs 9-10:30, second starts at 10 — overlapping coverage
+        var bookings = new[] { (T(9), T(10).AddMinutes(30)), (T(10), T(11)) };
+        ScheduleHelpers.IsFullyBooked(T(9), T(11), bookings).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsFullyBooked_BookingStartingBeforeWindow_ReturnsTrue()
+    {
+        // Booking starts an hour early but covers the full window
+        var bookings = new[] { (T(8), T(11)) };
+        ScheduleHelpers.IsFullyBooked(T(9), T(11), bookings).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsFullyBooked_BookingStartingBeforeWindowLeavesGap_ReturnsFalse()
+    {
+        // Booking starts early but only reaches T(10), leaving T(10)-T(11) uncovered
+        var bookings = new[] { (T(8), T(10)) };
+        ScheduleHelpers.IsFullyBooked(T(9), T(11), bookings).Should().BeFalse();
+    }
 }

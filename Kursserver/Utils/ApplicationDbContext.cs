@@ -29,6 +29,9 @@ namespace Kursserver.Utils
 
         public DbSet<AdminAvailability> AdminAvailabilities { get; set; }
         public DbSet<Booking> Bookings { get; set; }
+
+        public DbSet<RecurringEvent> RecurringEvents { get; set; }
+        public DbSet<RecurringEventException> RecurringEventExceptions { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -150,6 +153,7 @@ namespace Kursserver.Utils
                 .HasOne(b => b.Coach)
                 .WithMany()
                 .HasForeignKey(b => b.CoachId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Booking>()
@@ -164,6 +168,18 @@ namespace Kursserver.Utils
                 .HasForeignKey(b => b.AdminAvailabilityId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<RecurringEvent>()
+                .HasOne(r => r.Admin)
+                .WithMany()
+                .HasForeignKey(r => r.AdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<RecurringEventException>()
+                .HasOne(e => e.RecurringEvent)
+                .WithMany()
+                .HasForeignKey(e => e.RecurringEventId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
