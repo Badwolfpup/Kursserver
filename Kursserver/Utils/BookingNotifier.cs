@@ -27,7 +27,7 @@ namespace Kursserver.Utils
                         _emailService.SendEmailFireAndForget(coach.Email, "Ny mötesförfrågan",
                             $"Du har fått en mötesförfrågan {timeStr}. Logga in för att bekräfta.");
                 }
-                // Admin created with student → notify student
+                // Admin created with student → notify student (only direct admin→student, no coach involved)
                 if (booking.StudentId.HasValue && booking.CoachId == null)
                 {
                     var student = await _db.Users.FindAsync(booking.StudentId.Value);
@@ -104,6 +104,15 @@ namespace Kursserver.Utils
                             _emailService.SendEmailFireAndForget(coach.Email, "Bokning nekad",
                                 $"Din bokning {timeStr} har nekats. Anledning: {reason}");
                     }
+                }
+
+                // Admin accepted a meeting with a student → notify student
+                if (newStatus == "accepted" && booking.StudentId.HasValue)
+                {
+                    var student = await _db.Users.FindAsync(booking.StudentId.Value);
+                    if (student?.EmailNotifications == true)
+                        _emailService.SendEmailFireAndForget(student.Email, "Nytt möte inbokat",
+                            $"Ett möte har bokats in {timeStr}. Logga in för att se detaljer.");
                 }
             }
         }
