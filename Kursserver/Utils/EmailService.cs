@@ -10,11 +10,13 @@ namespace Kursserver.Utils
     {
         private readonly IConfiguration _config;
         private readonly IResend _resend;
+        private readonly bool _isDevelopment;
 
-        public EmailService(IConfiguration config, IResend resend)
+        public EmailService(IConfiguration config, IResend resend, IWebHostEnvironment env)
         {
             _config = config;
             _resend = resend;
+            _isDevelopment = env.IsDevelopment();
         }
 
         public async Task ResendEmailAsync(string toEmail, int passcode)
@@ -35,7 +37,7 @@ namespace Kursserver.Utils
             message.From.Add(new MailboxAddress("noreply@culprogrammering.se", _config["Smtp:Username"]));
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = subject;
-            message.Body = new TextPart("plain") { Text = body };
+            message.Body = new TextPart("plain") { Text = $"OBS! Detta är ett automatiskt emailutskick. Du kan inte svara på det.\n---\n\n{body}" };
 
             using (var client = new SmtpClient())
             {
@@ -48,6 +50,7 @@ namespace Kursserver.Utils
 
         public void SendEmailFireAndForget(string toEmail, string subject, string body)
         {
+            if (_isDevelopment) return;
             _ = Task.Run(async () =>
             {
                 try
@@ -57,7 +60,7 @@ namespace Kursserver.Utils
                         From = "noreply@culprogrammering.net",
                         To = toEmail,
                         Subject = subject,
-                        HtmlBody = $"<p>{body}</p>",
+                        HtmlBody = $"<p style=\"color:#c00;font-weight:bold;\">OBS! Detta är ett automatiskt emailutskick. Du kan inte svara på det.</p><hr/><p>{body}</p>",
                     });
                 }
                 catch { /* silently ignore */ }

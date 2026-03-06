@@ -4,6 +4,7 @@ using Kursserver.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kursserver.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260306091846_AddRecurringEventsAndNullableCoachId")]
+    partial class AddRecurringEventsAndNullableCoachId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,35 +138,6 @@ namespace Kursserver.Migrations
                     b.ToTable("Bookings");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.BugReport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("BugReports");
-                });
-
             modelBuilder.Entity("Kursserver.Models.Exercise", b =>
                 {
                     b.Property<int>("Id")
@@ -264,36 +238,6 @@ namespace Kursserver.Migrations
                     b.HasIndex("UserId", "Topic", "Language");
 
                     b.ToTable("ExerciseHistories");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.Message", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SenderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ThreadId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SenderId");
-
-                    b.HasIndex("ThreadId");
-
-                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Kursserver.Models.NoClass", b =>
@@ -568,7 +512,7 @@ namespace Kursserver.Migrations
                     b.ToTable("RecurringEventExceptions");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.Thread", b =>
+            modelBuilder.Entity("Kursserver.Models.Ticket", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -579,36 +523,110 @@ namespace Kursserver.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("StudentContextId")
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RecipientId")
                         .HasColumnType("int");
 
-                    b.Property<int>("StudentContextIdForUnique")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("int")
-                        .HasComputedColumnSql("COALESCE(StudentContextId, 0)");
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("User1Id")
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("Kursserver.Models.TicketReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("User2Id")
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StudentContextId");
+                    b.HasIndex("SenderId");
 
-                    b.HasIndex("User2Id");
+                    b.HasIndex("TicketId");
 
-                    b.HasIndex("User1Id", "User2Id", "StudentContextIdForUnique")
-                        .IsUnique();
-
-                    b.ToTable("Threads");
+                    b.ToTable("TicketReplies");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.ThreadView", b =>
+            modelBuilder.Entity("Kursserver.Models.TicketTimeSuggestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SuggestedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SuggestedById");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketTimeSuggestions");
+                });
+
+            modelBuilder.Entity("Kursserver.Models.TicketView", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -619,7 +637,7 @@ namespace Kursserver.Migrations
                     b.Property<DateTime>("LastViewedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("ThreadId")
+                    b.Property<int>("TicketId")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -627,12 +645,12 @@ namespace Kursserver.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ThreadId");
+                    b.HasIndex("TicketId");
 
-                    b.HasIndex("UserId", "ThreadId")
+                    b.HasIndex("UserId", "TicketId")
                         .IsUnique();
 
-                    b.ToTable("ThreadViews");
+                    b.ToTable("TicketViews");
                 });
 
             modelBuilder.Entity("Kursserver.Models.User", b =>
@@ -768,17 +786,6 @@ namespace Kursserver.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.BugReport", b =>
-                {
-                    b.HasOne("Kursserver.Models.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Sender");
-                });
-
             modelBuilder.Entity("Kursserver.Models.ExerciseHistory", b =>
                 {
                     b.HasOne("Kursserver.Models.User", "User")
@@ -788,25 +795,6 @@ namespace Kursserver.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.Message", b =>
-                {
-                    b.HasOne("Kursserver.Models.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("Kursserver.Models.Thread", "Thread")
-                        .WithMany()
-                        .HasForeignKey("ThreadId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sender");
-
-                    b.Navigation("Thread");
                 });
 
             modelBuilder.Entity("Kursserver.Models.Permission", b =>
@@ -863,37 +851,67 @@ namespace Kursserver.Migrations
                     b.Navigation("RecurringEvent");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.Thread", b =>
+            modelBuilder.Entity("Kursserver.Models.Ticket", b =>
                 {
-                    b.HasOne("Kursserver.Models.User", "StudentContext")
+                    b.HasOne("Kursserver.Models.User", "Recipient")
                         .WithMany()
-                        .HasForeignKey("StudentContextId")
+                        .HasForeignKey("RecipientId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("Kursserver.Models.User", "User1")
+                    b.HasOne("Kursserver.Models.User", "Sender")
                         .WithMany()
-                        .HasForeignKey("User1Id")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("Kursserver.Models.User", "User2")
-                        .WithMany()
-                        .HasForeignKey("User2Id")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                    b.Navigation("Recipient");
 
-                    b.Navigation("StudentContext");
-
-                    b.Navigation("User1");
-
-                    b.Navigation("User2");
+                    b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("Kursserver.Models.ThreadView", b =>
+            modelBuilder.Entity("Kursserver.Models.TicketReply", b =>
                 {
-                    b.HasOne("Kursserver.Models.Thread", "Thread")
+                    b.HasOne("Kursserver.Models.User", "Sender")
                         .WithMany()
-                        .HasForeignKey("ThreadId")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Kursserver.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sender");
+
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("Kursserver.Models.TicketTimeSuggestion", b =>
+                {
+                    b.HasOne("Kursserver.Models.User", "SuggestedBy")
+                        .WithMany()
+                        .HasForeignKey("SuggestedById")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Kursserver.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SuggestedBy");
+
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("Kursserver.Models.TicketView", b =>
+                {
+                    b.HasOne("Kursserver.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -903,7 +921,7 @@ namespace Kursserver.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Thread");
+                    b.Navigation("Ticket");
 
                     b.Navigation("User");
                 });

@@ -143,9 +143,13 @@ app.MapNoClassEndpoints();
 app.MapAnthropicEndpoints();
 app.MapDeepSeekEndpoints();
 app.MapGrokEndpoints();
-app.MapTicketEndpoints();
+app.MapMessageEndpoints();
+app.MapBugReportEndpoints();
 app.MapAdminAvailabilityEndpoints();
 app.MapHelpbotEndpoints();
+app.MapAvailabilityEndpoints();
+app.MapBookingEndpoints();
+app.MapRecurringEventEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");

@@ -133,6 +133,48 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Student updates their own email and phone number from the profile/settings page
+            /// CALLS: useUpdateStudentProfile() → userService.updateStudentProfile()
+            /// SIDE EFFECTS:
+            ///   - Updates Email and Telephone for the calling student in the database
+            ///   - Returns 409 Conflict if email or telephone is already used by another user
+            /// </summary>
+            app.MapPut("api/update-student-profile", [Authorize] async ([FromBody] UpdateStudentProfileDto dto, ApplicationDbContext db, HttpContext context) =>
+            {
+                var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (userRole != Role.Student.ToString()) return Results.Forbid();
+
+                var userId = new FromClaims().GetUserId(context);
+                var user = await db.Users.FindAsync(userId);
+                if (user == null) return Results.NotFound();
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(dto.Email))
+                    {
+                        var emailTaken = await db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
+                        if (emailTaken) return Results.Conflict("Email already in use.");
+                    }
+
+                    if (!string.IsNullOrEmpty(dto.Telephone))
+                    {
+                        var phoneTaken = await db.Users.AnyAsync(u => u.Telephone == dto.Telephone && u.Id != userId);
+                        if (phoneTaken) return Results.Conflict("Telephone already in use.");
+                    }
+
+                    if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
+                    if (!string.IsNullOrEmpty(dto.Telephone)) user.Telephone = dto.Telephone;
+                    db.Update(user);
+                    await db.SaveChangesAsync();
+                    return Results.Ok(user);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to update student profile: " + ex.Message, statusCode: 500);
+                }
+            });
+
             // PUT api/update-my-settings — self-service for all roles (own user only)
             app.MapPut("api/update-my-settings", [Authorize] async ([FromBody] UpdateMySettingsDto dto, ApplicationDbContext db, HttpContext context) =>
             {

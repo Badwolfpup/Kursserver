@@ -11,8 +11,7 @@ namespace Kursserver.Models
         public int AdminId { get; set; }
         public User? Admin { get; set; }
 
-        [Required]
-        public int CoachId { get; set; }
+        public int? CoachId { get; set; }
         public User? Coach { get; set; }
 
         public int? StudentId { get; set; }
