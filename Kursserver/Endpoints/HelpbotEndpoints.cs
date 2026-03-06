@@ -1,3 +1,4 @@
+using Kursserver.Dto;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 
@@ -31,13 +32,9 @@ namespace Kursserver.Endpoints
                         new GrokMessage { Role = "system", Content = _systemPrompt }
                     };
 
-                    // Add last 6 messages of history
                     if (dto.History != null)
                     {
-                        foreach (var msg in dto.History.TakeLast(6))
-                        {
-                            messages.Add(new GrokMessage { Role = msg.Role, Content = msg.Content });
-                        }
+                        messages.AddRange(dto.History.TakeLast(6));
                     }
 
                     messages.Add(new GrokMessage { Role = "user", Content = dto.Message });
@@ -45,23 +42,11 @@ namespace Kursserver.Endpoints
                     var reply = await grokService.GetChatCompletionAsync(messages.ToArray());
                     return Results.Ok(new { reply });
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    return Results.Problem("Helpbot error: " + ex.Message, statusCode: 500);
+                    return Results.Problem("Helpbot service error", statusCode: 500);
                 }
             });
         }
-    }
-
-    public class HelpbotChatDto
-    {
-        public string Message { get; set; } = "";
-        public List<HelpbotHistoryMessage>? History { get; set; }
-    }
-
-    public class HelpbotHistoryMessage
-    {
-        public string Role { get; set; } = "";
-        public string Content { get; set; } = "";
     }
 }
