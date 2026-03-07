@@ -368,5 +368,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Claude Code
-.claude/
+# Claude Code (settings only — PROJECT_CONTEXT.md is tracked)
+.claude/*
+!.claude/PROJECT_CONTEXT.md
