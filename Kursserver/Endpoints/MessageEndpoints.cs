@@ -16,6 +16,7 @@ namespace Kursserver.Endpoints
             /// SCENARIO: User fetches all their threads with last message and unread flag
             /// CALLS: useThreads() → messageService.getThreads() (kurshemsida)
             /// SIDE EFFECTS: none (read-only)
+            /// ACCESS: Admins/teachers also see all student-context threads (not just their own)
             /// </summary>
             app.MapGet("/api/threads", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
@@ -29,6 +30,16 @@ namespace Kursserver.Endpoints
                         .Include(t => t.User2)
                         .Include(t => t.StudentContext)
                         .Where(t => t.User1Id == userId || t.User2Id == userId);
+
+                    // Admins/teachers can also see all student-context threads
+                    if (role == Role.Admin.ToString() || role == Role.Teacher.ToString())
+                    {
+                        query = db.Threads
+                            .Include(t => t.User1)
+                            .Include(t => t.User2)
+                            .Include(t => t.StudentContext)
+                            .Where(t => t.User1Id == userId || t.User2Id == userId || t.StudentContextId != null);
+                    }
 
                     query = await ApplyThreadVisibilityFilter(query, userId, role, db);
 
@@ -83,15 +94,20 @@ namespace Kursserver.Endpoints
             /// SCENARIO: User fetches paginated messages for a thread
             /// CALLS: useThreadMessages() → messageService.getThreadMessages() (kurshemsida)
             /// SIDE EFFECTS: none (read-only)
+            /// ACCESS: Admins/teachers can read any student-context thread
             /// </summary>
             app.MapGet("/api/threads/{id}/messages", [Authorize] async (int id, [FromQuery] int take, [FromQuery] int skip, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
                     var userId = new FromClaims().GetUserId(context);
+                    var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
                     var thread = await db.Threads.FindAsync(id);
                     if (thread == null) return Results.NotFound("Thread not found");
-                    if (thread.User1Id != userId && thread.User2Id != userId)
+                    var isParticipant = thread.User1Id == userId || thread.User2Id == userId;
+                    var isAdminTeacherWithStudentContext = thread.StudentContextId != null &&
+                        (role == Role.Admin.ToString() || role == Role.Teacher.ToString());
+                    if (!isParticipant && !isAdminTeacherWithStudentContext)
                         return Results.Forbid();
 
                     var messages = await db.Messages
@@ -122,7 +138,7 @@ namespace Kursserver.Endpoints
             /// SCENARIO: User sends a message to another user, creating thread lazily
             /// CALLS: useSendMessage() → messageService.sendMessage() (kurshemsida)
             /// SIDE EFFECTS:
-            ///   - Creates Thread if first message between users
+            ///   - Creates Thread if first message (student-context: one per coach+student pair)
             ///   - Creates Message record
             ///   - Updates Thread.UpdatedAt
             ///   - Sends email to recipient if EmailNotifications = true (EmailService)
@@ -137,22 +153,45 @@ namespace Kursserver.Endpoints
                     if (senderId == dto.RecipientId)
                         return Results.BadRequest("Cannot message yourself");
 
-                    // Enforce User1Id < User2Id for uniqueness
-                    var user1Id = Math.Min(senderId, dto.RecipientId);
-                    var user2Id = Math.Max(senderId, dto.RecipientId);
-
                     // Find or create thread
-                    var thread = await db.Threads.FirstOrDefaultAsync(t =>
-                        t.User1Id == user1Id &&
-                        t.User2Id == user2Id &&
-                        t.StudentContextId == dto.StudentContextId);
+                    Models.Thread? thread = null;
+
+                    if (dto.StudentContextId != null)
+                    {
+                        // Student-context threads: one per (coach, student) pair
+                        // Determine which user is the coach
+                        var senderUser = await db.Users.FindAsync(senderId);
+                        var recipientUser = await db.Users.FindAsync(dto.RecipientId);
+                        var coachId = senderUser?.AuthLevel == Role.Coach ? senderId
+                            : recipientUser?.AuthLevel == Role.Coach ? dto.RecipientId
+                            : 0;
+
+                        if (coachId > 0)
+                        {
+                            thread = await db.Threads.FirstOrDefaultAsync(t =>
+                                t.StudentContextId == dto.StudentContextId &&
+                                (t.User1Id == coachId || t.User2Id == coachId));
+                        }
+                    }
+                    else
+                    {
+                        // Regular DM: match by exact user pair
+                        var user1Id = Math.Min(senderId, dto.RecipientId);
+                        var user2Id = Math.Max(senderId, dto.RecipientId);
+                        thread = await db.Threads.FirstOrDefaultAsync(t =>
+                            t.User1Id == user1Id &&
+                            t.User2Id == user2Id &&
+                            t.StudentContextId == null);
+                    }
 
                     if (thread == null)
                     {
+                        var u1 = Math.Min(senderId, dto.RecipientId);
+                        var u2 = Math.Max(senderId, dto.RecipientId);
                         thread = new Models.Thread
                         {
-                            User1Id = user1Id,
-                            User2Id = user2Id,
+                            User1Id = u1,
+                            User2Id = u2,
                             StudentContextId = dto.StudentContextId,
                         };
                         db.Threads.Add(thread);
@@ -198,15 +237,20 @@ namespace Kursserver.Endpoints
             /// CALLS: useMarkThreadViewed() → messageService.markThreadViewed() (kurshemsida)
             /// SIDE EFFECTS:
             ///   - Upserts ThreadView.LastViewedAt
+            /// ACCESS: Admins/teachers can mark any student-context thread as viewed
             /// </summary>
             app.MapPost("/api/threads/{id}/view", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 try
                 {
                     var userId = new FromClaims().GetUserId(context);
+                    var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
                     var thread = await db.Threads.FindAsync(id);
                     if (thread == null) return Results.NotFound("Thread not found");
-                    if (thread.User1Id != userId && thread.User2Id != userId)
+                    var isParticipant = thread.User1Id == userId || thread.User2Id == userId;
+                    var isAdminTeacherWithStudentContext = thread.StudentContextId != null &&
+                        (role == Role.Admin.ToString() || role == Role.Teacher.ToString());
+                    if (!isParticipant && !isAdminTeacherWithStudentContext)
                         return Results.Forbid();
 
                     var view = await db.ThreadViews
@@ -234,6 +278,7 @@ namespace Kursserver.Endpoints
             /// SCENARIO: User fetches total unread thread count for sidebar badge
             /// CALLS: useUnreadCount() → messageService.getUnreadCount() (kurshemsida)
             /// SIDE EFFECTS: none (read-only)
+            /// ACCESS: Admins/teachers include all student-context threads in count
             /// </summary>
             app.MapGet("/api/threads/unread-count", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
             {
@@ -242,8 +287,17 @@ namespace Kursserver.Endpoints
                     var userId = new FromClaims().GetUserId(context);
                     var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
 
-                    var query = db.Threads
-                        .Where(t => t.User1Id == userId || t.User2Id == userId);
+                    IQueryable<Models.Thread> query;
+                    if (role == Role.Admin.ToString() || role == Role.Teacher.ToString())
+                    {
+                        query = db.Threads
+                            .Where(t => t.User1Id == userId || t.User2Id == userId || t.StudentContextId != null);
+                    }
+                    else
+                    {
+                        query = db.Threads
+                            .Where(t => t.User1Id == userId || t.User2Id == userId);
+                    }
 
                     query = await ApplyThreadVisibilityFilter(query, userId, role, db);
 
