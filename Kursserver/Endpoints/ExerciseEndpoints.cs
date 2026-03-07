@@ -98,6 +98,68 @@ namespace Kursserver.Endpoints
                 }
             });
 
+            /// <summary>
+            /// SCENARIO: Student fetches their AI-generated exercise history
+            /// CALLS: useExerciseHistory() → exerciseService.fetchExerciseHistory()
+            /// </summary>
+            app.MapGet("api/exercise-history", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
+            {
+                var userIdClaim = context.User.FindFirst("id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Results.Unauthorized();
+
+                try
+                {
+                    var history = await db.ExerciseHistories
+                        .Where(h => h.UserId == userId)
+                        .OrderByDescending(h => h.CreatedAt)
+                        .Select(h => new
+                        {
+                            h.Id, h.Topic, h.Language, h.Difficulty, h.Title,
+                            h.Description, h.Example, h.Assumptions, h.FunctionSignature,
+                            h.Solution, h.Asserts, h.IsCompleted, h.CreatedAt
+                        })
+                        .ToListAsync();
+                    return Results.Ok(history);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to fetch exercise history: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            /// <summary>
+            /// SCENARIO: Student fetches their AI-generated project history
+            /// CALLS: useProjectHistory() → exerciseService.fetchProjectHistory()
+            /// </summary>
+            app.MapGet("api/project-history", [Authorize] async (ApplicationDbContext db, HttpContext context) =>
+            {
+                var userIdClaim = context.User.FindFirst("id")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+                    return Results.Unauthorized();
+
+                try
+                {
+                    var history = await db.ProjectHistories
+                        .Where(h => h.UserId == userId)
+                        .OrderByDescending(h => h.CreatedAt)
+                        .Select(h => new
+                        {
+                            h.Id, h.TechStack, h.Difficulty, h.Title,
+                            h.Description, h.LearningGoals, h.UserStories,
+                            h.DesignSpecs, h.AssetsNeeded, h.StarterHtml,
+                            h.BonusChallenges, h.SolutionHtml, h.SolutionCss,
+                            h.SolutionJs, h.IsCompleted, h.CreatedAt
+                        })
+                        .ToListAsync();
+                    return Results.Ok(history);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to fetch project history: " + ex.Message, statusCode: 500);
+                }
+            });
+
             app.MapPost("api/exercise-feedback", [Authorize] async (
                 ExerciseFeedbackDto dto, ApplicationDbContext db, HttpContext context) =>
             {
@@ -114,9 +176,10 @@ namespace Kursserver.Endpoints
                         Language = dto.Language,
                         Difficulty = dto.Difficulty,
                         Title = dto.Title,
-                        Description = dto.Description?.Length > 200
-                            ? dto.Description[..200]
-                            : dto.Description ?? "",
+                        Description = dto.Description ?? "",
+                        Example = dto.Example,
+                        Assumptions = dto.Assumptions,
+                        FunctionSignature = dto.FunctionSignature,
                         Solution = dto.Solution,
                         Asserts = dto.Asserts,
                         IsCompleted = dto.IsCompleted,
@@ -151,9 +214,13 @@ namespace Kursserver.Endpoints
                         TechStack = dto.TechStack,
                         Difficulty = dto.Difficulty,
                         Title = dto.Title,
-                        Description = dto.Description?.Length > 200
-                            ? dto.Description[..200]
-                            : dto.Description ?? "",
+                        Description = dto.Description ?? "",
+                        LearningGoals = dto.LearningGoals,
+                        UserStories = dto.UserStories,
+                        DesignSpecs = dto.DesignSpecs,
+                        AssetsNeeded = dto.AssetsNeeded,
+                        StarterHtml = dto.StarterHtml,
+                        BonusChallenges = dto.BonusChallenges,
                         SolutionHtml = dto.SolutionHtml,
                         SolutionCss = dto.SolutionCss,
                         SolutionJs = dto.SolutionJs,

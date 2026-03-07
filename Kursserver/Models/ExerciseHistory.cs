@@ -8,7 +8,10 @@
         public string Language { get; set; } = "";
         public int Difficulty { get; set; }
         public string Title { get; set; } = "";
-        public string Description { get; set; } = ""; // Store first 200 chars
+        public string Description { get; set; } = "";
+        public string? Example { get; set; }
+        public string? Assumptions { get; set; }
+        public string? FunctionSignature { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public bool? IsPositive { get; set; }

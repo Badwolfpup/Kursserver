@@ -89,7 +89,7 @@ namespace Kursserver.Endpoints
 
             app.MapPut("api/update-user", [Authorize] async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
                 if (accessCheck != null) return accessCheck;
                 // User? kontaktUser = null;
                 // if (dto.ContactId != null && dto.ContactId > 0)

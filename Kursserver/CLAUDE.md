@@ -1,5 +1,8 @@
 # Kursserver — Project Rules
 
+## Pull Requests
+- **Never push directly to main** — all changes must go through a PR. Create a branch, push it, and create a PR.
+
 ## Unit Tests
 - After implementing a feature, invoke the `unit-test` skill. It will scan changed code, identify testable logic, write tests, and run 3 independent reviewers.
 - **Quick edits**: If the change is config, model-only, or cosmetic — skip. Otherwise, invoke the skill.
