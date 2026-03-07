@@ -7,6 +7,9 @@ namespace Kursserver.Dto
         public int Difficulty { get; set; }
         public string Title { get; set; } = "";
         public string Description { get; set; } = "";
+        public string? Example { get; set; }
+        public string? Assumptions { get; set; }
+        public string? FunctionSignature { get; set; }
         public string? Solution { get; set; }
         public string? Asserts { get; set; }
         public bool IsCompleted { get; set; }
