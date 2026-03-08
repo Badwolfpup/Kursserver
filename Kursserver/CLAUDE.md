@@ -1,5 +1,10 @@
 # Kursserver — Project Rules
 
+## Architecture Reference
+- `.claude/PROJECT_CONTEXT.md` — full architecture, tech stack, endpoints, domain models, services
+- `.claude/INTENT.md` — organizational purpose, who we serve, guiding principles for design decisions
+- After completing implementation that changes architecture, endpoints, models, or services, check if this file needs updating.
+
 ## Pull Requests
 - **Never push directly to main** — all changes must go through a PR. Create a branch, push it, and create a PR.
 
