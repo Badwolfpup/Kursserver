@@ -17,7 +17,7 @@ namespace Kursserver.Endpoints
         /// </summary>
         public static void MapHelpbotEndpoints(this WebApplication app)
         {
-            app.MapPost("api/helpbot/chat", [Authorize] async (HelpbotChatDto dto, GrokService grokService, IWebHostEnvironment env) =>
+            app.MapPost("api/helpbot/chat", [Authorize] async (HelpbotChatDto dto, GrokService grokService, IWebHostEnvironment env, HttpContext context) =>
             {
                 try
                 {
@@ -27,9 +27,20 @@ namespace Kursserver.Endpoints
                         _systemPrompt = await File.ReadAllTextAsync(path);
                     }
 
+                    var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "unknown";
+                    var roleLabel = userRole switch
+                    {
+                        "Admin" => "admin",
+                        "Teacher" => "lärare",
+                        "Coach" => "coach",
+                        "Student" => "deltagare (student)",
+                        "Guest" => "gäst",
+                        _ => "okänd"
+                    };
+
                     var messages = new List<GrokMessage>
                     {
-                        new GrokMessage { Role = "system", Content = _systemPrompt }
+                        new GrokMessage { Role = "system", Content = $"Användaren som ställer frågan har rollen: {roleLabel}. Svara utifrån den rollens perspektiv och funktioner.\n\n{_systemPrompt}" }
                     };
 
                     if (dto.History != null)
