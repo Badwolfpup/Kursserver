@@ -30,11 +30,11 @@ namespace Kursserver.Endpoints
                     var userRole = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "unknown";
                     var roleLabel = userRole switch
                     {
-                        "1" => "admin",
-                        "2" => "lärare",
-                        "3" => "coach",
-                        "4" => "deltagare (student)",
-                        "5" => "gäst",
+                        "Admin" => "admin",
+                        "Teacher" => "lärare",
+                        "Coach" => "coach",
+                        "Student" => "deltagare (student)",
+                        "Guest" => "gäst",
                         _ => "okänd"
                     };
 
