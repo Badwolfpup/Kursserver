@@ -143,7 +143,7 @@ app.MapNoClassEndpoints();
 app.MapAnthropicEndpoints();
 app.MapDeepSeekEndpoints();
 app.MapGrokEndpoints();
-app.MapMessageEndpoints();
+// app.MapMessageEndpoints();
 app.MapBugReportEndpoints();
 app.MapAdminAvailabilityEndpoints();
 app.MapHelpbotEndpoints();
