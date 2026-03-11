@@ -5,6 +5,11 @@
 - `.claude/INTENT.md` — organizational purpose, who we serve, guiding principles for design decisions
 - After completing implementation that changes architecture, endpoints, models, or services, check if this file needs updating.
 
+## Roles
+- **Teacher** and **Admin** are the same role with the same permissions — the only difference is that Admins can add new teachers. Treat them as interchangeable unless the task explicitly distinguishes them.
+- **Coach** is a separate role with its own permissions.
+- **Student** is a separate role with its own permissions.
+
 ## Pull Requests
 - **Never push directly to main** — all changes must go through a PR. Create a branch, push it, and create a PR.
 
