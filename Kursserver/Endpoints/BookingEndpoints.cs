@@ -366,6 +366,15 @@ namespace Kursserver.Endpoints
                     if (targetAdmin == null || (targetAdmin.AuthLevel != Role.Admin && targetAdmin.AuthLevel != Role.Teacher))
                         return Results.BadRequest("Target user is not a valid admin/teacher");
 
+                    // Check target teacher doesn't have a conflicting booking at this time
+                    var conflicts = await ConflictDetection.CheckBookingConflicts(
+                        db, booking.StartTime, booking.EndTime,
+                        adminId: dto.TargetAdminId,
+                        excludeBookingId: booking.Id);
+
+                    if (conflicts.Any(b => b.Status == "accepted"))
+                        return Results.Conflict("Target teacher already has a booking at this time");
+
                     var oldAdminId = booking.AdminId;
                     booking.AdminId = dto.TargetAdminId;
 
