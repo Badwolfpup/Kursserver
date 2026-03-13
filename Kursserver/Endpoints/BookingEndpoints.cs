@@ -375,6 +375,11 @@ namespace Kursserver.Endpoints
                     if (conflicts.Any(b => b.Status == "accepted"))
                         return Results.Conflict("Target teacher already has a booking at this time");
 
+                    // Block transfer of non-intro meetings to preset intro times
+                    if (booking.MeetingType != "intro"
+                        && await PresetIntroConfig.OverlapsPresetIntro(dto.TargetAdminId, booking.StartTime, booking.EndTime, db))
+                        return Results.Conflict("Target teacher has a preset intro time at this slot — only intro meetings allowed");
+
                     var oldAdminId = booking.AdminId;
                     booking.AdminId = dto.TargetAdminId;
 
