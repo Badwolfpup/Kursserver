@@ -196,6 +196,7 @@ namespace Kursserver.Endpoints
                         existing.Name = dto.Name;
                         existing.StartTime = dto.StartTime;
                         existing.EndTime = dto.EndTime;
+                        existing.Classroom = dto.Classroom;
                     }
                     else
                     {
@@ -206,7 +207,8 @@ namespace Kursserver.Endpoints
                             IsDeleted = dto.IsDeleted,
                             Name = dto.Name,
                             StartTime = dto.StartTime,
-                            EndTime = dto.EndTime
+                            EndTime = dto.EndTime,
+                            Classroom = dto.Classroom
                         });
                     }
 

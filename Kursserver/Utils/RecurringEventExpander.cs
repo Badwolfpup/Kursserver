@@ -56,6 +56,7 @@ namespace Kursserver.Utils
                     var name = exception?.Name ?? ev.Name;
                     var startTime = exception?.StartTime ?? ev.StartTime;
                     var endTime = exception?.EndTime ?? ev.EndTime;
+                    var classroom = exception?.Classroom ?? ev.Classroom;
 
                     instances.Add(new RecurringEventInstance(
                         EventId: ev.Id,
@@ -66,7 +67,7 @@ namespace Kursserver.Utils
                         AdminId: ev.AdminId,
                         Frequency: ev.Frequency,
                         IsException: exception != null,
-                        Classroom: ev.Classroom));
+                        Classroom: classroom));
                 }
 
                 current = current.AddDays(increment);
