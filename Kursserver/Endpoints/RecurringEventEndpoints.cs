@@ -38,6 +38,7 @@ namespace Kursserver.Endpoints
             /// CALLS: useCreateRecurringEvent() → recurringEventService.create() (kurshemsida)
             /// SIDE EFFECTS:
             ///   - Creates RecurringEvent record with AdminId = dto.AdminId ?? JWT user
+            ///   - Optional Classroom (positive integer) stored on the event
             /// </summary>
             app.MapPost("/api/recurring-events", [Authorize] async (CreateRecurringEventDto dto, ApplicationDbContext db, HttpContext context) =>
             {
@@ -54,6 +55,9 @@ namespace Kursserver.Endpoints
                     if (dto.Frequency != "weekly" && dto.Frequency != "biweekly")
                         return Results.BadRequest("Frequency must be 'weekly' or 'biweekly'");
 
+                    if (dto.Classroom.HasValue && dto.Classroom.Value < 1)
+                        return Results.BadRequest("Classroom must be a positive integer");
+
                     var ev = new RecurringEvent
                     {
                         Name = dto.Name,
@@ -63,6 +67,7 @@ namespace Kursserver.Endpoints
                         Frequency = dto.Frequency,
                         StartDate = dto.StartDate,
                         AdminId = dto.AdminId ?? userId,
+                        Classroom = dto.Classroom,
                         CreatedAt = DateTime.Now
                     };
 
@@ -81,7 +86,7 @@ namespace Kursserver.Endpoints
             /// SCENARIO: Admin/Teacher updates a recurring event definition. Admin(authLevel=1)=all, Teacher=own.
             /// CALLS: useUpdateRecurringEvent() → recurringEventService.update() (kurshemsida)
             /// SIDE EFFECTS:
-            ///   - Updates RecurringEvent fields
+            ///   - Updates RecurringEvent fields including optional Classroom
             /// </summary>
             app.MapPut("/api/recurring-events/{id}", [Authorize] async (int id, UpdateRecurringEventDto dto, ApplicationDbContext db, HttpContext context) =>
             {
@@ -109,6 +114,13 @@ namespace Kursserver.Endpoints
                         if (dto.Frequency != "weekly" && dto.Frequency != "biweekly")
                             return Results.BadRequest("Frequency must be 'weekly' or 'biweekly'");
                         ev.Frequency = dto.Frequency;
+                    }
+
+                    if (dto.Classroom.HasValue)
+                    {
+                        if (dto.Classroom.Value < 1)
+                            return Results.BadRequest("Classroom must be a positive integer");
+                        ev.Classroom = dto.Classroom.Value;
                     }
 
                     await db.SaveChangesAsync();

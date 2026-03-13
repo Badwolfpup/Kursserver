@@ -10,7 +10,8 @@ namespace Kursserver.Utils
         DateTime Date,
         int AdminId,
         string Frequency,
-        bool IsException);
+        bool IsException,
+        int? Classroom);
 
     public static class RecurringEventExpander
     {
@@ -64,7 +65,8 @@ namespace Kursserver.Utils
                         Date: current,
                         AdminId: ev.AdminId,
                         Frequency: ev.Frequency,
-                        IsException: exception != null));
+                        IsException: exception != null,
+                        Classroom: ev.Classroom));
                 }
 
                 current = current.AddDays(increment);

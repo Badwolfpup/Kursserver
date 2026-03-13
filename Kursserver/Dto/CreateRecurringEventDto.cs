@@ -9,5 +9,6 @@ namespace Kursserver.Dto
         public string Frequency { get; set; } = "weekly";
         public DateTime StartDate { get; set; }
         public int? AdminId { get; set; }
+        public int? Classroom { get; set; }
     }
 }

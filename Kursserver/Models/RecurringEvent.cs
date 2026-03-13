@@ -29,6 +29,8 @@ namespace Kursserver.Models
         public int AdminId { get; set; }
         public User? Admin { get; set; }
 
+        public int? Classroom { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }
