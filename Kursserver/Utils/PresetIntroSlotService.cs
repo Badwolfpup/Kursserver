@@ -11,13 +11,7 @@ namespace Kursserver.Utils
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<PresetIntroSlotService> _logger;
 
-        private record PresetConfig(string FirstName, DayOfWeek Day, int StartHour, int EndHour);
-
-        private static readonly PresetConfig[] Presets =
-        [
-            new("Victoria", DayOfWeek.Tuesday, 10, 11),
-            new("Adam",     DayOfWeek.Thursday, 11, 12),
-        ];
+        private static PresetIntroRule[] Presets => PresetIntroConfig.Rules;
 
         public PresetIntroSlotService(IServiceScopeFactory scopeFactory, ILogger<PresetIntroSlotService> logger)
         {
