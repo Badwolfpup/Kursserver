@@ -101,9 +101,7 @@ namespace Kursserver.Endpoints
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
 
-                    // Teachers can only edit their own
-                    if (userRole == "Teacher" && ev.AdminId != userId)
-                        return Results.StatusCode(403);
+
 
                     if (dto.Name != null) ev.Name = dto.Name;
                     if (dto.Weekday.HasValue) ev.Weekday = dto.Weekday.Value;
@@ -151,10 +149,6 @@ namespace Kursserver.Endpoints
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
 
-                    // Teachers can only delete their own
-                    if (userRole == "Teacher" && ev.AdminId != userId)
-                        return Results.StatusCode(403);
-
                     db.RecurringEvents.Remove(ev);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -183,9 +177,6 @@ namespace Kursserver.Endpoints
 
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
-
-                    if (userRole == "Teacher" && ev.AdminId != userId)
-                        return Results.StatusCode(403);
 
                     var existing = await db.RecurringEventExceptions
                         .FirstOrDefaultAsync(e => e.RecurringEventId == id && e.Date.Date == date.Date);
@@ -239,9 +230,6 @@ namespace Kursserver.Endpoints
 
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
-
-                    if (userRole == "Teacher" && ev.AdminId != userId)
-                        return Results.StatusCode(403);
 
                     var exception = await db.RecurringEventExceptions
                         .FirstOrDefaultAsync(e => e.RecurringEventId == id && e.Date.Date == date.Date);

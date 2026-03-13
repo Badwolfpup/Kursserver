@@ -212,6 +212,74 @@ public class RecurringEventExpanderTests
         result.Should().BeEmpty();
     }
 
+    // --- Classroom passthrough ---
+
+    [Fact]
+    public void ExpandOccurrences_PassesThroughClassroom()
+    {
+        var ev = MakeEvent(weekday: DayOfWeek.Monday);
+        ev.Classroom = 3;
+        var from = new DateTime(2026, 3, 2);
+        var to = new DateTime(2026, 3, 2);
+
+        var result = RecurringEventExpander.ExpandOccurrences(ev, from, to, [], []);
+
+        result.Should().HaveCount(1);
+        result[0].Classroom.Should().Be(3);
+    }
+
+    [Fact]
+    public void ExpandOccurrences_NullClassroom_PassesThrough()
+    {
+        var ev = MakeEvent(weekday: DayOfWeek.Monday);
+        ev.Classroom = null;
+        var from = new DateTime(2026, 3, 2);
+        var to = new DateTime(2026, 3, 2);
+
+        var result = RecurringEventExpander.ExpandOccurrences(ev, from, to, [], []);
+
+        result.Should().HaveCount(1);
+        result[0].Classroom.Should().BeNull();
+    }
+
+    [Fact]
+    public void ExpandOccurrences_ExceptionOverridesClassroom()
+    {
+        var ev = MakeEvent(weekday: DayOfWeek.Monday);
+        ev.Classroom = 3;
+        var from = new DateTime(2026, 3, 9);
+        var to = new DateTime(2026, 3, 9);
+        var exceptions = new List<RecurringEventException>
+        {
+            new() { RecurringEventId = 1, Date = new DateTime(2026, 3, 9), IsDeleted = false, Classroom = 7 }
+        };
+
+        var result = RecurringEventExpander.ExpandOccurrences(ev, from, to, exceptions, []);
+
+        result.Should().HaveCount(1);
+        result[0].Classroom.Should().Be(7);
+        result[0].IsException.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ExpandOccurrences_ExceptionNullClassroom_FallsBackToEvent()
+    {
+        var ev = MakeEvent(weekday: DayOfWeek.Monday);
+        ev.Classroom = 3;
+        var from = new DateTime(2026, 3, 9);
+        var to = new DateTime(2026, 3, 9);
+        var exceptions = new List<RecurringEventException>
+        {
+            new() { RecurringEventId = 1, Date = new DateTime(2026, 3, 9), IsDeleted = false, Classroom = null }
+        };
+
+        var result = RecurringEventExpander.ExpandOccurrences(ev, from, to, exceptions, []);
+
+        result.Should().HaveCount(1);
+        // null exception classroom falls back to event's classroom via ?? operator
+        result[0].Classroom.Should().Be(3);
+    }
+
     // --- ExpandAll ---
 
     [Fact]
