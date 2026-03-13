@@ -158,6 +158,38 @@ namespace Kursserver.Utils
             }
         }
 
+        /// <summary>
+        /// SCENARIO: Booking transferred to another teacher — notifies coach (always) and student (if followup)
+        /// CALLS: PUT /api/bookings/{id}/transfer (BookingEndpoints.cs)
+        /// SIDE EFFECTS: Sends email to coach and optionally student about teacher change
+        /// </summary>
+        public async Task NotifyTransferred(Booking booking, int oldAdminId)
+        {
+            var oldAdmin = await _db.Users.FindAsync(oldAdminId);
+            var newAdmin = await _db.Users.FindAsync(booking.AdminId);
+            var oldName = oldAdmin != null ? $"{oldAdmin.FirstName} {oldAdmin.LastName}" : "Okänd";
+            var newName = newAdmin != null ? $"{newAdmin.FirstName} {newAdmin.LastName}" : "Okänd";
+            var dateStr = booking.StartTime.ToString("yyyy-MM-dd");
+            var timeStr = booking.StartTime.ToString("HH:mm");
+            var message = $"{newName} kommer att delta på mötet {dateStr} kl.{timeStr} istället för {oldName}.";
+
+            // Always notify coach
+            if (booking.CoachId.HasValue)
+            {
+                var coach = await _db.Users.FindAsync(booking.CoachId.Value);
+                if (coach != null)
+                    _emailService.SendEmailFireAndForget(coach.Email, "Ändring av mötesdeltagare", message);
+            }
+
+            // For followups, also notify student
+            if (booking.MeetingType == "followup" && booking.StudentId.HasValue)
+            {
+                var student = await _db.Users.FindAsync(booking.StudentId.Value);
+                if (student?.EmailNotifications == true)
+                    _emailService.SendEmailFireAndForget(student.Email, "Ändring av mötesdeltagare", message);
+            }
+        }
+
         public async Task NotifyRescheduled(Booking booking, string reschedulerRole)
         {
             var timeStr = $"{booking.StartTime:g}–{booking.EndTime:t}";

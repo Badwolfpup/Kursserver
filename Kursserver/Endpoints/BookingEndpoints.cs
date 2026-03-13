@@ -345,6 +345,47 @@ namespace Kursserver.Endpoints
             });
 
             /// <summary>
+            /// SCENARIO: Transfer a booking to another teacher — admin/teacher only
+            /// CALLS: useTransferBooking() → bookingService.transferBooking() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Updates booking.AdminId to TargetAdminId
+            ///   - If booking was pending, sets status to "accepted"
+            ///   - Sends transfer notification email via BookingNotifier.NotifyTransferred
+            /// </summary>
+            app.MapPut("/api/bookings/{id}/transfer", [Authorize] async (int id, TransferBookingDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            {
+                try
+                {
+                    var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
+                    if (accessCheck != null) return accessCheck;
+
+                    var booking = await db.Bookings.FindAsync(id);
+                    if (booking == null) return Results.NotFound("Booking not found");
+
+                    var targetAdmin = await db.Users.FindAsync(dto.TargetAdminId);
+                    if (targetAdmin == null || (targetAdmin.AuthLevel != Role.Admin && targetAdmin.AuthLevel != Role.Teacher))
+                        return Results.BadRequest("Target user is not a valid admin/teacher");
+
+                    var oldAdminId = booking.AdminId;
+                    booking.AdminId = dto.TargetAdminId;
+
+                    if (booking.Status == "pending")
+                        booking.Status = "accepted";
+
+                    await db.SaveChangesAsync();
+
+                    var notifier = new BookingNotifier(emailService, db);
+                    await notifier.NotifyTransferred(booking, oldAdminId);
+
+                    return Results.Ok(booking);
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem("Failed to transfer booking: " + ex.Message, statusCode: 500);
+                }
+            });
+
+            /// <summary>
             /// SCENARIO: Reschedule a booking — sets new times, status=rescheduled
             /// CALLS: useRescheduleBooking() → bookingService.rescheduleBooking() (kurshemsida)
             /// SIDE EFFECTS:
