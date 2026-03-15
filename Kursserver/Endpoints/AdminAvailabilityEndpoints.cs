@@ -269,14 +269,14 @@ namespace Kursserver.Endpoints
                                 $"Du har blivit inbokad {booking.StartTime:g}–{booking.EndTime:t}. Mötestyp: {booking.MeetingType}.");
                     }
 
-                    // Notify student (meeting is already accepted, so student should know)
-                    if (booking.StudentId.HasValue)
-                    {
-                        var student = await db.Users.FindAsync(booking.StudentId.Value);
-                        if (student?.EmailNotifications == true)
-                            emailService.SendEmailFireAndForget(student.Email, "Nytt möte inbokat",
-                                $"Ett möte har bokats in {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att se detaljer.");
-                    }
+                    // Students temporarily disabled — don't send email notifications
+                    // if (booking.StudentId.HasValue)
+                    // {
+                    //     var student = await db.Users.FindAsync(booking.StudentId.Value);
+                    //     if (student?.EmailNotifications == true)
+                    //         emailService.SendEmailFireAndForget(student.Email, "Nytt möte inbokat",
+                    //             $"Ett möte har bokats in {booking.StartTime:g}–{booking.EndTime:t}. Logga in för att se detaljer.");
+                    // }
 
                     return Results.Created($"/api/admin-availability/bookings/{booking.Id}", booking);
                 }
