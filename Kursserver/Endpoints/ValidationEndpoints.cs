@@ -31,6 +31,13 @@ namespace Kursserver.Endpoints
             {
                 var user = await db.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("Email not found.");
+
+                // Students are temporarily disabled from logging in
+                if (user.AuthLevel == Role.Student)
+                    return Results.Json(
+                        new { detail = "Elevkonton är för tillfället inte aktiverade. Kontakta din lärare vid frågor." },
+                        statusCode: 403);
+
                 else
                 {
                     if (app.Environment.IsDevelopment())
@@ -81,6 +88,16 @@ namespace Kursserver.Endpoints
                 {
                     var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
                     if (user == null && dto.Email != "guest@guest.com") return Results.NotFound();
+
+                    // Students are temporarily disabled from logging in
+                    if (user != null && user.AuthLevel == Role.Student)
+                    {
+                        passcodeStore.TryRemove(dto.Email, out _);
+                        return Results.Json(
+                            new { detail = "Elevkonton är för tillfället inte aktiverade. Kontakta din lärare vid frågor." },
+                            statusCode: 403);
+                    }
+
                     if (dto.Email != "guest@guest.com")
                     {
                         var claims = new[]

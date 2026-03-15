@@ -371,3 +371,7 @@ FodyWeavers.xsd
 # Claude Code (settings only — PROJECT_CONTEXT.md is tracked)
 .claude/*
 !.claude/PROJECT_CONTEXT.md
+.gitnexus
+AGENTS.md
+CLAUDE.md
+.claude/skills/gitnexus/

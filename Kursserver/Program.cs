@@ -131,6 +131,31 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Reject any existing student JWT tokens — students are temporarily disabled
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var roleClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role);
+        if (roleClaim?.Value == "Student")
+        {
+            // Clear the JWT cookie so the student doesn't keep retrying
+            context.Response.Cookies.Append("jwt", "", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(-1)
+            });
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"detail\":\"Elevkonton är för tillfället inte aktiverade.\"}");
+            return;
+        }
+    }
+    await next();
+});
+
 // Enable authentication and authorization middleware
 app.MapAttendanceEndpoints();
 app.MapPostEndpoints();
