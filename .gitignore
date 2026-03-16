@@ -368,10 +368,14 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Claude Code (settings only — PROJECT_CONTEXT.md is tracked)
+# Claude Code (settings only — shared docs are tracked)
 .claude/*
 !.claude/PROJECT_CONTEXT.md
+!.claude/SETUP_TESTING.md
+!.claude/INTENT.md
 .gitnexus
 AGENTS.md
 CLAUDE.md
 .claude/skills/gitnexus/
+Claude-Sessions/
+**/Claude-Sessions/
