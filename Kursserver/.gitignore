@@ -6,3 +6,6 @@ appsettings.json
 appsettings.Development.json
 
 !appsettings.template.json
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json

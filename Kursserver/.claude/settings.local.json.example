@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(curl *)",
+      "Bash(npm run *)",
+      "Bash(dotnet *)",
+      "Bash(node *)",
+      "Bash(ls *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "pattern": "*.cs",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd <REPO_ROOT> && dotnet build --no-restore 2>&1 | tail -15",
+            "timeout": 30000,
+            "statusMessage": "Building .NET..."
+          }
+        ]
+      }
+    ]
+  }
+}
