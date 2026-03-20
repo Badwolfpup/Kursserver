@@ -31,6 +31,7 @@ namespace Kursserver.Utils
         public DbSet<RecurringEvent> RecurringEvents { get; set; }
         public DbSet<RecurringEventException> RecurringEventExceptions { get; set; }
         public DbSet<BusyTime> BusyTimes { get; set; }
+        public DbSet<SeatingAssignment> SeatingAssignments { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -192,6 +193,16 @@ namespace Kursserver.Utils
                 .WithMany()
                 .HasForeignKey(b => b.AdminId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<SeatingAssignment>()
+                .HasOne(s => s.Student)
+                .WithMany()
+                .HasForeignKey(s => s.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SeatingAssignment>()
+                .HasIndex(s => new { s.ClassroomId, s.DayOfWeek, s.Period, s.Row, s.Column })
+                .IsUnique();
 
             modelBuilder.Entity<RecurringEventException>()
                 .HasOne(e => e.RecurringEvent)
