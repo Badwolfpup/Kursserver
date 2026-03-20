@@ -162,8 +162,8 @@ app.MapPostEndpoints();
 app.MapUserEndpoints();
 app.MapUtilityEndpoints();
 app.MapValidationEndpoints(jwtSettings);
-app.MapProjectEndpoints();
-app.MapExerciseEndpoints();
+// app.MapProjectEndpoints(); // Students temporarily disabled
+// app.MapExerciseEndpoints(); // Students temporarily disabled
 app.MapPostGetPostEndpoint();
 app.MapNoClassEndpoints();
 app.MapAnthropicEndpoints();
