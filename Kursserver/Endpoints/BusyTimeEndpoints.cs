@@ -35,6 +35,10 @@ namespace Kursserver.Endpoints
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
 
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
+                if (dto.AdminId != userId)
+                    return Results.StatusCode(403);
+
                 if (dto.StartTime >= dto.EndTime)
                     return Results.BadRequest("Starttid måste vara före sluttid.");
 
@@ -74,6 +78,10 @@ namespace Kursserver.Endpoints
                     booking.Status = "declined";
                     booking.Reason = "Avbokad på grund av upptagen tid";
                 }
+
+                // Save declined bookings before re-evaluating availability
+                if (overlappingBookings.Count > 0)
+                    await db.SaveChangesAsync();
 
                 // Trim/split overlapping availability slots
                 var overlappingAvails = await db.AdminAvailabilities
@@ -197,8 +205,10 @@ namespace Kursserver.Endpoints
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
 
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
                 var busyTime = await db.BusyTimes.FindAsync(id);
                 if (busyTime == null) return Results.NotFound("Busy time not found");
+                if (busyTime.AdminId != userId) return Results.StatusCode(403);
 
                 if (dto.StartTime >= dto.EndTime)
                     return Results.BadRequest("Starttid måste vara före sluttid.");
@@ -233,8 +243,10 @@ namespace Kursserver.Endpoints
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
 
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
                 var busyTime = await db.BusyTimes.FindAsync(id);
                 if (busyTime == null) return Results.NotFound("Busy time not found");
+                if (busyTime.AdminId != userId) return Results.StatusCode(403);
 
                 db.BusyTimes.Remove(busyTime);
                 await db.SaveChangesAsync();

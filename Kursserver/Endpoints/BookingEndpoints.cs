@@ -56,6 +56,8 @@ namespace Kursserver.Endpoints
             ///   - For availability-based bookings: marks AdminAvailability.IsBooked = true if fully booked
             ///   - Sends email notification via BookingNotifier
             ///   - Returns 409 conflict if accepted booking overlaps; 409 warning if pending overlaps (Force=true bypasses warning)
+            ///   - Returns 409 busy if time overlaps admin's busy time (hard block for coach/student, soft warning for admin/teacher; Force=true bypasses)
+            ///   - Sets CreatedByRole from JWT role on the created booking
             /// </summary>
             app.MapPost("/api/bookings", [Authorize] async (CreateBookingDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
             {
