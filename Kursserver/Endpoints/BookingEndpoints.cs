@@ -155,6 +155,35 @@ namespace Kursserver.Endpoints
                             return Results.Conflict(new { type = "warning", bookings = conflicts.Where(b => b.Status != "declined").ToList() });
                     }
 
+                    // Check busy time overlap
+                    var overlappingBusy = await db.BusyTimes
+                        .Where(bt => bt.AdminId == bookingAdminId
+                                  && bt.StartTime < dto.EndTime
+                                  && bt.EndTime > dto.StartTime)
+                        .ToListAsync();
+
+                    if (overlappingBusy.Count > 0)
+                    {
+                        if (role == Role.Coach || role == Role.Student)
+                        {
+                            // Hard block — coach/student cannot book on busy time
+                            return Results.Conflict(new
+                            {
+                                type = "busy",
+                                message = "Handledaren är upptagen under denna tid."
+                            });
+                        }
+                        else if (!dto.Force)
+                        {
+                            // Admin/Teacher warning — can proceed with Force=true
+                            return Results.Conflict(new
+                            {
+                                type = "busy-warning",
+                                message = "Du har markerat denna tid som upptagen. Vill du boka ändå?"
+                            });
+                        }
+                    }
+
                     var booking = new Booking
                     {
                         AdminId = bookingAdminId,
@@ -167,7 +196,8 @@ namespace Kursserver.Endpoints
                         EndTime = dto.EndTime,
                         BookedAt = DateTime.Now,
                         Seen = false,
-                        Status = status
+                        Status = status,
+                        CreatedByRole = userRole ?? ""
                     };
 
                     db.Bookings.Add(booking);
