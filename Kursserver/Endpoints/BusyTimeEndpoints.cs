@@ -10,12 +10,26 @@ namespace Kursserver.Endpoints
     {
         public static void MapBusyTimeEndpoints(this WebApplication app)
         {
+            /// <summary>
+            /// SCENARIO: Any authenticated user fetches all busy time blocks
+            /// CALLS: useBusyTimes() → getBusyTimes() (kurshemsida)
+            /// SIDE EFFECTS: none (read-only)
+            /// </summary>
             app.MapGet("/api/busy-time", [Authorize] async (ApplicationDbContext db) =>
             {
                 var busyTimes = await db.BusyTimes.ToListAsync();
                 return Results.Ok(busyTimes);
             });
 
+            /// <summary>
+            /// SCENARIO: Admin/Teacher creates a busy time block; overlapping availability is trimmed/split, overlapping bookings require confirmation
+            /// CALLS: useAddBusyTime() → addBusyTime() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - If non-declined bookings overlap: returns 409 {type:"confirm", bookings} unless Force=true
+            ///   - With Force=true: cancels overlapping bookings (status=declined, reason set)
+            ///   - Trims/splits overlapping AdminAvailability records; re-evaluates IsBooked
+            ///   - Creates BusyTime record
+            /// </summary>
             app.MapPost("/api/busy-time", [Authorize] async (AddBusyTimeDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
@@ -171,6 +185,13 @@ namespace Kursserver.Endpoints
                 return Results.Created($"/api/busy-time/{busyTime.Id}", busyTime);
             });
 
+            /// <summary>
+            /// SCENARIO: Admin/Teacher updates a busy time block's time or note; rejects if overlapping non-declined bookings exist
+            /// CALLS: useUpdateBusyTime() → updateBusyTime() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Updates StartTime, EndTime, Note on the BusyTime record
+            ///   - Returns 409 if the new time range overlaps non-declined bookings
+            /// </summary>
             app.MapPut("/api/busy-time/{id}", [Authorize] async (int id, UpdateBusyTimeDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
@@ -182,6 +203,17 @@ namespace Kursserver.Endpoints
                 if (dto.StartTime >= dto.EndTime)
                     return Results.BadRequest("Starttid måste vara före sluttid.");
 
+                // Check if the new time range overlaps non-declined bookings
+                var overlappingBookings = await db.Bookings
+                    .Where(b => b.AdminId == busyTime.AdminId
+                             && b.Status != "declined"
+                             && b.StartTime < dto.EndTime
+                             && b.EndTime > dto.StartTime)
+                    .AnyAsync();
+
+                if (overlappingBookings)
+                    return Results.Conflict("Den nya tiden överlappar med ett befintligt möte. Ta bort den upptagna tiden och skapa en ny om du vill avboka mötet.");
+
                 busyTime.StartTime = dto.StartTime;
                 busyTime.EndTime = dto.EndTime;
                 busyTime.Note = dto.Note;
@@ -190,6 +222,12 @@ namespace Kursserver.Endpoints
                 return Results.Ok(busyTime);
             });
 
+            /// <summary>
+            /// SCENARIO: Admin/Teacher deletes a busy time block
+            /// CALLS: useDeleteBusyTime() → deleteBusyTime() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Removes the BusyTime record
+            /// </summary>
             app.MapDelete("/api/busy-time/{id}", [Authorize] async (int id, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
