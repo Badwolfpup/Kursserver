@@ -178,6 +178,7 @@ app.MapBookingEndpoints();
 app.MapRecurringEventEndpoints();
 app.MapBusyTimeEndpoints();
 app.MapSeatingEndpoints();
+app.MapAbsenceWarningEndpoints();
 
 app.MapControllers();
 //app.MapFallbackToFile("index.html");
