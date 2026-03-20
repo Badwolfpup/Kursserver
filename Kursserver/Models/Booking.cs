@@ -39,5 +39,7 @@ namespace Kursserver.Models
         public string Reason { get; set; } = "";
 
         public string RescheduledBy { get; set; } = "";
+
+        public string CreatedByRole { get; set; } = "";
     }
 }

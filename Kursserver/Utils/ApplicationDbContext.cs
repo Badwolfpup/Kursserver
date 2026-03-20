@@ -30,6 +30,7 @@ namespace Kursserver.Utils
 
         public DbSet<RecurringEvent> RecurringEvents { get; set; }
         public DbSet<RecurringEventException> RecurringEventExceptions { get; set; }
+        public DbSet<BusyTime> BusyTimes { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -184,6 +185,12 @@ namespace Kursserver.Utils
                 .HasOne(r => r.Admin)
                 .WithMany()
                 .HasForeignKey(r => r.AdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<BusyTime>()
+                .HasOne(b => b.Admin)
+                .WithMany()
+                .HasForeignKey(b => b.AdminId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<RecurringEventException>()
