@@ -1,3 +1,4 @@
+using System.Net;
 using Kursserver.Dto;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,8 @@ namespace Kursserver.Endpoints
                 if (string.IsNullOrWhiteSpace(dto.CoachEmail))
                     return Results.BadRequest("Coach email is required.");
 
-                emailService.SendEmailFireAndForget(dto.CoachEmail, dto.Subject, dto.Body);
+                var sanitizedBody = WebUtility.HtmlEncode(dto.Body);
+                emailService.SendEmailFireAndForget(dto.CoachEmail, dto.Subject, sanitizedBody);
                 return Results.Ok();
             });
         }
