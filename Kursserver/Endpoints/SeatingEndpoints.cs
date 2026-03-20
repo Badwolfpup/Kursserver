@@ -10,6 +10,11 @@ namespace Kursserver.Endpoints
     {
         public static void MapSeatingEndpoints(this WebApplication app)
         {
+            /// <summary>
+            /// SCENARIO: Admin/Teacher fetches all seating assignments for a classroom and day
+            /// CALLS: useSeatingAssignments() → getSeatingAssignments() (kurshemsida)
+            /// SIDE EFFECTS: none (read-only)
+            /// </summary>
             app.MapGet("/api/seating", [Authorize] async (int classroomId, int dayOfWeek, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
@@ -22,6 +27,12 @@ namespace Kursserver.Endpoints
                 return Results.Ok(assignments);
             });
 
+            /// <summary>
+            /// SCENARIO: Admin/Teacher assigns a student to a seat (upsert — creates or updates)
+            /// CALLS: useAssignSeat() → assignSeat() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Creates or updates SeatingAssignment record for the given classroom/day/period/row/column
+            /// </summary>
             app.MapPut("/api/seating/assign", [Authorize] async (AssignSeatDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
@@ -56,6 +67,12 @@ namespace Kursserver.Endpoints
                 return Results.Ok();
             });
 
+            /// <summary>
+            /// SCENARIO: Admin/Teacher removes a student from a seat
+            /// CALLS: useClearSeat() → clearSeat() (kurshemsida)
+            /// SIDE EFFECTS:
+            ///   - Removes SeatingAssignment record for the given classroom/day/period/row/column
+            /// </summary>
             app.MapDelete("/api/seating/clear", [Authorize] async (int classroomId, int dayOfWeek, string period, int row, int column, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
