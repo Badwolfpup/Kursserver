@@ -8,6 +8,8 @@ namespace Kursserver.Endpoints
 {
     public static class SeatingEndpoints
     {
+        private static readonly HashSet<string> ValidPeriods = new() { "am", "pm" };
+
         public static void MapSeatingEndpoints(this WebApplication app)
         {
             /// <summary>
@@ -38,33 +40,51 @@ namespace Kursserver.Endpoints
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
 
-                var existing = await db.SeatingAssignments
-                    .FirstOrDefaultAsync(s =>
-                        s.ClassroomId == dto.ClassroomId &&
-                        s.DayOfWeek == dto.DayOfWeek &&
-                        s.Period == dto.Period &&
-                        s.Row == dto.Row &&
-                        s.Column == dto.Column);
+                if (!ValidPeriods.Contains(dto.Period))
+                    return Results.BadRequest("Period must be 'am' or 'pm'");
+                if (dto.DayOfWeek < 1 || dto.DayOfWeek > 4)
+                    return Results.BadRequest("DayOfWeek must be 1-4");
+                if (dto.Row < 1 || dto.Column < 1)
+                    return Results.BadRequest("Row and Column must be positive");
 
-                if (existing != null)
+                var student = await db.Users.FindAsync(dto.StudentId);
+                if (student == null || student.AuthLevel != Role.Student)
+                    return Results.BadRequest("Invalid student");
+
+                try
                 {
-                    existing.StudentId = dto.StudentId;
-                }
-                else
-                {
-                    db.SeatingAssignments.Add(new SeatingAssignment
+                    var existing = await db.SeatingAssignments
+                        .FirstOrDefaultAsync(s =>
+                            s.ClassroomId == dto.ClassroomId &&
+                            s.DayOfWeek == dto.DayOfWeek &&
+                            s.Period == dto.Period &&
+                            s.Row == dto.Row &&
+                            s.Column == dto.Column);
+
+                    if (existing != null)
                     {
-                        ClassroomId = dto.ClassroomId,
-                        DayOfWeek = dto.DayOfWeek,
-                        Period = dto.Period,
-                        Row = dto.Row,
-                        Column = dto.Column,
-                        StudentId = dto.StudentId,
-                    });
-                }
+                        existing.StudentId = dto.StudentId;
+                    }
+                    else
+                    {
+                        db.SeatingAssignments.Add(new SeatingAssignment
+                        {
+                            ClassroomId = dto.ClassroomId,
+                            DayOfWeek = dto.DayOfWeek,
+                            Period = dto.Period,
+                            Row = dto.Row,
+                            Column = dto.Column,
+                            StudentId = dto.StudentId,
+                        });
+                    }
 
-                await db.SaveChangesAsync();
-                return Results.Ok();
+                    await db.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                catch (DbUpdateException)
+                {
+                    return Results.Conflict("Platsen är redan tilldelad");
+                }
             });
 
             /// <summary>
@@ -77,6 +97,9 @@ namespace Kursserver.Endpoints
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
+
+                if (!ValidPeriods.Contains(period))
+                    return Results.BadRequest("Period must be 'am' or 'pm'");
 
                 var existing = await db.SeatingAssignments
                     .FirstOrDefaultAsync(s =>
