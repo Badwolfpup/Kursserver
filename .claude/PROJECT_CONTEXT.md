@@ -51,8 +51,9 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 | PostEndpoints.cs | GET/POST/PUT/DELETE posts, POST upload-image |
 | ExerciseEndpoints.cs | GET/POST/PUT/DELETE exercises, GET exercise-history, POST exercise-feedback |
 | ProjectEndpoints.cs | GET/POST/PUT/DELETE projects, GET project-history, POST project-feedback |
-| BookingEndpoints.cs | GET/POST bookings, PUT bookings/{id}/status, PUT bookings/{id}, DELETE bookings/{id} |
-| AdminAvailabilityEndpoints.cs | GET/POST/PUT/DELETE admin-availability, GET availability-bookings/{id} |
+| BookingEndpoints.cs | GET /api/bookings (role-filtered), POST /api/bookings, PUT /api/bookings/{id}/status, PUT /api/bookings/{id}/cancel, PUT /api/bookings/{id}/transfer, PUT /api/bookings/{id}/reschedule |
+| AvailabilityEndpoints.cs | GET/POST/PUT/DELETE /api/availability (decorative overlays only — no booking interaction) |
+| BusyTimeEndpoints.cs | GET/POST/PUT/DELETE /api/busy-time (no overlap checks — admin resolves visually) |
 | RecurringEventEndpoints.cs | GET/POST/PUT/DELETE recurring-events, POST/PUT recurring-events/{id}/exceptions |
 | MessageEndpoints.cs | GET/POST threads, GET threads/{id}, POST threads/{id}/messages, PUT threads/{id}/view |
 | AttendanceEndpoints.cs | GET weekly-attendance/{date}/{count}, PUT update-attendance |
@@ -84,9 +85,10 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 | Post | id, html, delta, publishedAt, author, pinned | User (nullable, SetNull) |
 | Project | id, title, description, html, css, js, difficulty, projectType | — |
 | Exercise | id, title, description, js, expectedResult, difficulty, exerciseType, clues, goodToKnow | — |
-| Booking | id, adminId, coachId, studentId, adminAvailabilityId, startTime, endTime, status, meetingType, note, seen, reason, rescheduledBy | Admin, Coach, Student, AdminAvailability |
-| AdminAvailability | id, adminId, startTime, endTime, isBooked | Admin |
-| RecurringEvent | id, name, weekday, startTime, endTime, frequency, startDate, adminId, createdAt | Admin |
+| Booking | id, adminId, coachId, studentId, startTime, endTime, status (enum), meetingType (enum), note, seen, reason, rescheduledBy (nullable enum), createdByRole (enum) | Admin, Coach, Student |
+| AdminAvailability | id, adminId, startTime, endTime | Admin (decorative calendar overlay — does not gate bookings) |
+| RecurringEvent | id, name, weekday, startTime, endTime, frequency (enum), startDate, adminId, classroom, createdAt | Admin |
+| BusyTime | id, adminId, startTime, endTime, note | Admin |
 | RecurringEventException | id, recurringEventId, date, name, startTime, endTime, isDeleted | RecurringEvent (cascade) |
 | Thread | id, user1Id, user2Id, studentContextId, createdAt, updatedAt | User1, User2, StudentContext (unique constraint) |
 | Message | id, threadId, senderId, content, createdAt | Thread (cascade), Sender |
@@ -99,6 +101,12 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 
 Role enum (User.cs): Admin=1, Teacher=2, Coach=3, Student=4, Guest=5
 
+Booking-domain enums (stored as PascalCase strings via EF `HasConversion<string>()`):
+- `BookingStatus`: Pending | Accepted | Declined
+- `MeetingType`: Intro | Followup | Other
+- `BookingActor` (used for CreatedByRole + RescheduledBy): Admin | Coach
+- `RecurringFrequency`: Weekly | Biweekly
+
 ## Services
 
 | Service | Purpose |
@@ -107,10 +115,9 @@ Role enum (User.cs): Admin=1, Teacher=2, Coach=3, Student=4, Guest=5
 | AnthropicService | Claude Haiku 4.5 completions (claude-haiku-4-5-20251001) |
 | DeepSeekService | DeepSeek API completions |
 | GrokService | Grok/xAI completions (grok-code-fast-1, grok-3-mini-fast) |
-| BookingNotifier | Email notifications for booking lifecycle (created, status changed, cancelled, rescheduled). Swedish language. Respects EmailNotifications flag. |
-| ConflictDetection | Overlapping bookings and recurring event conflict checks |
+| BookingNotifier | Email notifications for booking lifecycle (created, status changed, cancelled, rescheduled, transferred). Swedish language. Respects EmailNotifications flag. Coach↔Admin only (no student paths). |
+| ConflictDetection | `CheckAcceptedBookingConflicts` — returns accepted-status bookings overlapping a time range. Pendings intentionally not reported (they coexist). |
 | RecurringEventExpander | Expands recurring events into instances for a date range, respects exceptions and NoClass dates |
-| ScheduleHelpers | Overlap checks, fully-booked detection |
 | ExercisePromptTemplates | Prompt templates for AI exercise generation |
 | ProjectPromptTemplates | Prompt templates for AI project generation |
 | ExerciseResponseParser | Parses AI exercise response into structured data |
@@ -139,7 +146,7 @@ Role enum (User.cs): Admin=1, Teacher=2, Coach=3, Student=4, Guest=5
 
 ## Error Handling
 - Endpoints use try-catch returning `Results.BadRequest/NotFound/Conflict/Problem`
-- 409 Conflict for booking overlaps (returns conflict details for frontend decision)
+- 409 Conflict for bookings is **Accepted-overlap only** (hard block). Pending overlaps and busy-time/recurring overlaps are not gated at the backend — admin resolves manually or frontend warns coaches
 - No global exception middleware
 - Fire-and-forget email can fail silently
 
@@ -181,8 +188,10 @@ Skip service methods and helpers — only endpoint registrations get these comme
 - `AllowedOrigin` key must be set in production appsettings.json — server throws on startup if missing
 - `wwwroot/` must exist as an empty folder locally in dev — gitignored, not created on clone
 - Dev server: `localhost:5001`, Swagger at `/swagger` (Dev only)
+- **JSON enum serialization**: uses both Minimal APIs and Controllers. `JsonStringEnumConverter` must be configured on **both** `AddControllers().AddJsonOptions(...)` and `ConfigureHttpJsonOptions(...)` — missing either breaks one surface. Same applies to `PropertyNamingPolicy = JsonNamingPolicy.CamelCase`.
+- **Booking approval flow**: every new booking starts `Status=Pending` regardless of creator. Reschedule also returns to Pending + stamps RescheduledBy. Availability does not gate bookings — it's a decorative overlay. Busy-time does not block or cancel bookings.
 
 ## Unit Tests
-- `Kursserver.Tests` covers pure helpers/parsers only (ScheduleHelpers, HasAdminPriviligies, FromClaims, exercise/project parsers)
+- `Kursserver.Tests` covers pure helpers/parsers only (RecurringEventExpander, HasAdminPriviligies, FromClaims, exercise/project parsers)
 - No HTTP endpoint integration tests
 - New endpoints only need tests if they extract pure logic into a static helper method
