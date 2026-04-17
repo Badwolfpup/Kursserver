@@ -1,3 +1,5 @@
+using Kursserver.Models;
+
 namespace Kursserver.Dto
 {
     public class UpdateBookingTimesDto
@@ -6,6 +8,6 @@ namespace Kursserver.Dto
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string? Reason { get; set; }
-        public string RescheduledBy { get; set; } = "";
+        public BookingActor RescheduledBy { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace Kursserver.Utils
         DateTime End,
         DateTime Date,
         int AdminId,
-        string Frequency,
+        RecurringFrequency Frequency,
         bool IsException,
         int? Classroom);
 
@@ -32,7 +32,7 @@ namespace Kursserver.Utils
             while (current.DayOfWeek != ev.Weekday)
                 current = current.AddDays(1);
 
-            var increment = ev.Frequency == "biweekly" ? 14 : 7;
+            var increment = ev.Frequency == RecurringFrequency.Biweekly ? 14 : 7;
 
             while (current <= rangeEnd.Date)
             {

@@ -17,9 +17,6 @@ namespace Kursserver.Models
         public int? StudentId { get; set; }
         public User? Student { get; set; }
 
-        public int? AdminAvailabilityId { get; set; }
-        public AdminAvailability? AdminAvailability { get; set; }
-
         public string Note { get; set; } = "";
 
         [Required]
@@ -32,14 +29,17 @@ namespace Kursserver.Models
 
         public bool Seen { get; set; } = false;
 
-        public string MeetingType { get; set; } = "";
+        [Required]
+        public MeetingType MeetingType { get; set; }
 
-        public string Status { get; set; } = "pending";
+        [Required]
+        public BookingStatus Status { get; set; } = BookingStatus.Pending;
 
         public string Reason { get; set; } = "";
 
-        public string RescheduledBy { get; set; } = "";
+        public BookingActor? RescheduledBy { get; set; }
 
-        public string CreatedByRole { get; set; } = "";
+        [Required]
+        public BookingActor CreatedByRole { get; set; }
     }
 }

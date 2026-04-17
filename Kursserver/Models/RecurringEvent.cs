@@ -20,7 +20,7 @@ namespace Kursserver.Models
         public TimeSpan EndTime { get; set; }
 
         [Required]
-        public string Frequency { get; set; } = "weekly"; // "weekly" or "biweekly"
+        public RecurringFrequency Frequency { get; set; } = RecurringFrequency.Weekly;
 
         [Required]
         public DateTime StartDate { get; set; }

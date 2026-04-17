@@ -104,13 +104,15 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
 builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<AnthropicService>();
 builder.Services.AddScoped<DeepSeekService>();
 builder.Services.AddScoped<GrokService>();
-builder.Services.AddHostedService<PresetIntroSlotService>();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
@@ -171,7 +173,6 @@ app.MapDeepSeekEndpoints();
 app.MapGrokEndpoints();
 // app.MapMessageEndpoints();
 app.MapBugReportEndpoints();
-app.MapAdminAvailabilityEndpoints();
 app.MapHelpbotEndpoints();
 app.MapAvailabilityEndpoints();
 app.MapBookingEndpoints();

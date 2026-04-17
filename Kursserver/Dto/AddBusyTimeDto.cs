@@ -6,6 +6,5 @@ namespace Kursserver.Dto
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string? Note { get; set; }
-        public bool Force { get; set; } = false;
     }
 }
