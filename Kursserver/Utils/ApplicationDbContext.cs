@@ -176,11 +176,24 @@ namespace Kursserver.Utils
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Booking>()
-                .HasOne(b => b.AdminAvailability)
-                .WithMany()
-                .HasForeignKey(b => b.AdminAvailabilityId)
-                .IsRequired(false)
-                .OnDelete(DeleteBehavior.SetNull);
+                .Property(b => b.Status)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.MeetingType)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.CreatedByRole)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.RescheduledBy)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<RecurringEvent>()
+                .Property(r => r.Frequency)
+                .HasConversion<string>();
 
             modelBuilder.Entity<RecurringEvent>()
                 .HasOne(r => r.Admin)

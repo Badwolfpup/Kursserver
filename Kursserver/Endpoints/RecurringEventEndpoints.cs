@@ -52,9 +52,6 @@ namespace Kursserver.Endpoints
                     if (dto.StartTime >= dto.EndTime)
                         return Results.BadRequest("Start time must be before end time");
 
-                    if (dto.Frequency != "weekly" && dto.Frequency != "biweekly")
-                        return Results.BadRequest("Frequency must be 'weekly' or 'biweekly'");
-
                     if (dto.Classroom.HasValue && dto.Classroom.Value < 1)
                         return Results.BadRequest("Classroom must be a positive integer");
 
@@ -107,12 +104,8 @@ namespace Kursserver.Endpoints
                     if (dto.Weekday.HasValue) ev.Weekday = dto.Weekday.Value;
                     if (dto.StartTime.HasValue) ev.StartTime = dto.StartTime.Value;
                     if (dto.EndTime.HasValue) ev.EndTime = dto.EndTime.Value;
-                    if (dto.Frequency != null)
-                    {
-                        if (dto.Frequency != "weekly" && dto.Frequency != "biweekly")
-                            return Results.BadRequest("Frequency must be 'weekly' or 'biweekly'");
-                        ev.Frequency = dto.Frequency;
-                    }
+                    if (dto.Frequency.HasValue)
+                        ev.Frequency = dto.Frequency.Value;
 
                     if (dto.Classroom.HasValue)
                     {

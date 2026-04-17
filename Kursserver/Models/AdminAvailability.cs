@@ -16,7 +16,5 @@ namespace Kursserver.Models
 
         [Required]
         public DateTime EndTime { get; set; }
-
-        public bool IsBooked { get; set; } = false;
     }
 }

@@ -13,13 +13,12 @@ namespace Kursserver.Utils
             _db = db;
         }
 
-        public async Task NotifyBookingCreated(Booking booking, string creatorRole)
+        public async Task NotifyBookingCreated(Booking booking, BookingActor creator)
         {
             var timeStr = $"{booking.StartTime:g}–{booking.EndTime:t}";
 
-            if (creatorRole == "Admin" || creatorRole == "Teacher")
+            if (creator == BookingActor.Admin)
             {
-                // Admin created → notify coach
                 if (booking.CoachId.HasValue)
                 {
                     var coach = await _db.Users.FindAsync(booking.CoachId.Value);
@@ -27,77 +26,38 @@ namespace Kursserver.Utils
                         _emailService.SendEmailFireAndForget(coach.Email, "Ny mötesförfrågan",
                             $"Du har fått en mötesförfrågan {timeStr}. Logga in för att bekräfta.");
                 }
-                // Students temporarily disabled — don't send email notifications
-                // if (booking.StudentId.HasValue && booking.CoachId == null)
-                // {
-                //     var student = await _db.Users.FindAsync(booking.StudentId.Value);
-                //     if (student?.EmailNotifications == true)
-                //         _emailService.SendEmailFireAndForget(student.Email, "Ny bokning",
-                //             $"Du har blivit inbokad {timeStr}. Mötestyp: {booking.MeetingType}.");
-                // }
             }
-            else if (creatorRole == "Coach")
+            else
             {
-                // Coach created → notify admin
                 var admin = await _db.Users.FindAsync(booking.AdminId);
                 if (admin?.EmailNotifications == true)
                     _emailService.SendEmailFireAndForget(admin.Email, "Ny mötesförfrågan från coach",
                         $"Du har fått en mötesförfrågan {timeStr}. Logga in för att bekräfta.");
             }
-            else if (creatorRole == "Student")
-            {
-                // Student created → notify admin
-                var admin = await _db.Users.FindAsync(booking.AdminId);
-                if (admin?.EmailNotifications == true)
-                    _emailService.SendEmailFireAndForget(admin.Email, "Ny bokningsförfrågan från elev",
-                        $"En elev har begärt handledning {timeStr}. Logga in för att bekräfta.");
-            }
         }
 
-        public async Task NotifyStatusChanged(Booking booking, string respondentRole, string newStatus, string? reason)
+        public async Task NotifyStatusChanged(Booking booking, BookingActor respondent, BookingStatus newStatus, string? reason)
         {
             var timeStr = $"{booking.StartTime:g}";
 
-            if (respondentRole == "Coach")
+            if (respondent == BookingActor.Coach)
             {
-                // Coach responded → notify admin
                 var admin = await _db.Users.FindAsync(booking.AdminId);
                 if (admin?.EmailNotifications == true)
                 {
-                    var verb = newStatus == "accepted" ? "bekräftat" : "nekat";
+                    var verb = newStatus == BookingStatus.Accepted ? "bekräftat" : "nekat";
                     _emailService.SendEmailFireAndForget(admin.Email, "Svar på bokning",
                         $"Coach har {verb} bokning {timeStr}.");
-                }
-
-                // Students temporarily disabled — don't send email notifications
-                // if (newStatus == "accepted" && booking.MeetingType == "followup" && booking.StudentId.HasValue)
-                // {
-                //     var student = await _db.Users.FindAsync(booking.StudentId.Value);
-                //     if (student?.EmailNotifications == true)
-                //         _emailService.SendEmailFireAndForget(student.Email, "Uppföljningsmöte bekräftat",
-                //             $"Ett uppföljningsmöte har bokats in {timeStr}.");
-                // }
-            }
-            else if (respondentRole == "Student")
-            {
-                // Student responded to reschedule → notify admin
-                var admin = await _db.Users.FindAsync(booking.AdminId);
-                if (admin?.EmailNotifications == true)
-                {
-                    var verb = newStatus == "accepted" ? "godkänt" : "nekat";
-                    _emailService.SendEmailFireAndForget(admin.Email, "Svar på ombokning",
-                        $"Elev har {verb} ombokning {timeStr}.");
                 }
             }
             else
             {
-                // Admin responded → notify coach
                 if (booking.CoachId.HasValue)
                 {
                     var coach = await _db.Users.FindAsync(booking.CoachId.Value);
                     if (coach != null)
                     {
-                        if (newStatus == "accepted")
+                        if (newStatus == BookingStatus.Accepted)
                             _emailService.SendEmailFireAndForget(coach.Email, "Bokning bekräftad",
                                 $"Din bokning {timeStr} har bekräftats.");
                         else
@@ -105,40 +65,14 @@ namespace Kursserver.Utils
                                 $"Din bokning {timeStr} har nekats. Anledning: {reason}");
                     }
                 }
-
-                // Students temporarily disabled — don't send email notifications
-                // if (newStatus == "accepted" && booking.StudentId.HasValue)
-                // {
-                //     var student = await _db.Users.FindAsync(booking.StudentId.Value);
-                //     if (student?.EmailNotifications == true)
-                //         _emailService.SendEmailFireAndForget(student.Email, "Nytt möte inbokat",
-                //             $"Ett möte har bokats in {timeStr}. Logga in för att se detaljer.");
-                // }
             }
         }
 
-        public async Task NotifyCancelled(Booking booking, string cancellerRole, string? reason)
+        public async Task NotifyCancelled(Booking booking, BookingActor canceller, string? reason)
         {
             var timeStr = $"{booking.StartTime:g}";
 
-            if (cancellerRole == "Student")
-            {
-                // Student cancelled → notify admin
-                var admin = await _db.Users.FindAsync(booking.AdminId);
-                if (admin?.EmailNotifications == true)
-                    _emailService.SendEmailFireAndForget(admin.Email, "Bokning avbokad av elev",
-                        $"En elev har avbokat bokning {timeStr}. Anledning: {reason}");
-
-                // If followup, also notify coach
-                if (booking.MeetingType == "followup" && booking.CoachId.HasValue)
-                {
-                    var coach = await _db.Users.FindAsync(booking.CoachId.Value);
-                    if (coach != null)
-                        _emailService.SendEmailFireAndForget(coach.Email, "Uppföljning avbokad av elev",
-                            $"En elev har avbokat uppföljningsmöte {timeStr}. Anledning: {reason}");
-                }
-            }
-            else if (cancellerRole == "Coach")
+            if (canceller == BookingActor.Coach)
             {
                 var admin = await _db.Users.FindAsync(booking.AdminId);
                 if (admin?.EmailNotifications == true)
@@ -147,7 +81,6 @@ namespace Kursserver.Utils
             }
             else
             {
-                // Admin cancelled → notify coach
                 if (booking.CoachId.HasValue)
                 {
                     var coach = await _db.Users.FindAsync(booking.CoachId.Value);
@@ -159,9 +92,9 @@ namespace Kursserver.Utils
         }
 
         /// <summary>
-        /// SCENARIO: Booking transferred to another teacher — notifies coach (always) and student (if followup)
+        /// SCENARIO: Booking transferred to another teacher — notifies coach
         /// CALLS: PUT /api/bookings/{id}/transfer (BookingEndpoints.cs)
-        /// SIDE EFFECTS: Sends email to coach and optionally student about teacher change
+        /// SIDE EFFECTS: Sends email to coach about teacher change
         /// </summary>
         public async Task NotifyTransferred(Booking booking, int oldAdminId)
         {
@@ -173,35 +106,26 @@ namespace Kursserver.Utils
             var timeStr = booking.StartTime.ToString("HH:mm");
             var message = $"{newName} kommer att delta på mötet {dateStr} kl.{timeStr} istället för {oldName}.";
 
-            // Always notify coach
             if (booking.CoachId.HasValue)
             {
                 var coach = await _db.Users.FindAsync(booking.CoachId.Value);
                 if (coach != null)
                     _emailService.SendEmailFireAndForget(coach.Email, "Ändring av mötesdeltagare", message);
             }
-
-            // Students temporarily disabled — don't send email notifications
-            // if (booking.MeetingType == "followup" && booking.StudentId.HasValue)
-            // {
-            //     var student = await _db.Users.FindAsync(booking.StudentId.Value);
-            //     if (student?.EmailNotifications == true)
-            //         _emailService.SendEmailFireAndForget(student.Email, "Ändring av mötesdeltagare", message);
-            // }
         }
 
-        public async Task NotifyRescheduled(Booking booking, string reschedulerRole)
+        public async Task NotifyRescheduled(Booking booking, BookingActor rescheduler)
         {
             var timeStr = $"{booking.StartTime:g}–{booking.EndTime:t}";
 
-            if (reschedulerRole == "Coach")
+            if (rescheduler == BookingActor.Coach)
             {
                 var admin = await _db.Users.FindAsync(booking.AdminId);
                 if (admin?.EmailNotifications == true)
                     _emailService.SendEmailFireAndForget(admin.Email, "Bokning ombokas",
                         $"Coach begär ombokning till {timeStr}. Logga in för att godkänna.");
             }
-            else if (reschedulerRole == "Admin" || reschedulerRole == "Teacher")
+            else
             {
                 if (booking.CoachId.HasValue)
                 {
@@ -210,14 +134,6 @@ namespace Kursserver.Utils
                         _emailService.SendEmailFireAndForget(coach.Email, "Bokning ombokas",
                             $"Din bokning har ombokats till {timeStr}. Logga in för att godkänna.");
                 }
-                // Students temporarily disabled — don't send email notifications
-                // if (!booking.CoachId.HasValue && booking.StudentId.HasValue)
-                // {
-                //     var student = await _db.Users.FindAsync(booking.StudentId.Value);
-                //     if (student?.EmailNotifications == true)
-                //         _emailService.SendEmailFireAndForget(student.Email, "Bokning ombokas",
-                //             $"Din bokning har ombokats till {timeStr}. Logga in för att godkänna.");
-                // }
             }
         }
     }

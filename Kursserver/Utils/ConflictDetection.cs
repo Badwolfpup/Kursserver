@@ -5,13 +5,18 @@ namespace Kursserver.Utils
 {
     public static class ConflictDetection
     {
-        public static async Task<List<Booking>> CheckBookingConflicts(
+        /// <summary>
+        /// Returns accepted bookings that overlap the given time range for the given admin or coach.
+        /// Pending bookings are intentionally ignored — multiple pending suggestions may coexist;
+        /// only an accepted booking is a hard conflict.
+        /// </summary>
+        public static async Task<List<Booking>> CheckAcceptedBookingConflicts(
             ApplicationDbContext db, DateTime startTime, DateTime endTime,
-            int? adminId = null, int? coachId = null, int? studentId = null,
+            int? adminId = null, int? coachId = null,
             int? excludeBookingId = null)
         {
             var query = db.Bookings
-                .Where(b => b.Status != "declined"
+                .Where(b => b.Status == BookingStatus.Accepted
                          && b.StartTime < endTime
                          && b.EndTime > startTime);
 
@@ -23,34 +28,9 @@ namespace Kursserver.Utils
             return conflicts
                 .Where(b =>
                     (adminId.HasValue && b.AdminId == adminId.Value) ||
-                    (coachId.HasValue && b.CoachId == coachId.Value) ||
-                    (studentId.HasValue && b.StudentId == studentId.Value))
+                    (coachId.HasValue && b.CoachId == coachId.Value))
                 .DistinctBy(b => b.Id)
                 .ToList();
-        }
-
-        public static async Task<List<(DateTime Start, DateTime End, string Name)>> CheckRecurringEventConflicts(
-            ApplicationDbContext db, DateTime startTime, DateTime endTime)
-        {
-            var events = await db.RecurringEvents.ToListAsync();
-            var exceptions = await db.RecurringEventExceptions.ToListAsync();
-            var noClassDates = await db.NoClasses.Select(n => n.Date.Date).ToListAsync();
-
-            var conflicts = new List<(DateTime, DateTime, string)>();
-
-            foreach (var ev in events)
-            {
-                var instances = RecurringEventExpander.ExpandOccurrences(
-                    ev, startTime, endTime, exceptions, noClassDates);
-
-                foreach (var inst in instances)
-                {
-                    if (inst.Start < endTime && inst.End > startTime)
-                        conflicts.Add((inst.Start, inst.End, inst.Name));
-                }
-            }
-
-            return conflicts;
         }
     }
 }

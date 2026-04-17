@@ -11,7 +11,7 @@ public class RecurringEventExpanderTests
         DayOfWeek weekday = DayOfWeek.Monday,
         int startHour = 10,
         int endHour = 11,
-        string frequency = "weekly",
+        RecurringFrequency frequency = RecurringFrequency.Weekly,
         DateTime? startDate = null,
         int adminId = 1)
     {
@@ -65,7 +65,7 @@ public class RecurringEventExpanderTests
     [Fact]
     public void ExpandOccurrences_Biweekly_ReturnsEveryOtherWeek()
     {
-        var ev = MakeEvent(weekday: DayOfWeek.Monday, frequency: "biweekly", startDate: new DateTime(2026, 3, 2));
+        var ev = MakeEvent(weekday: DayOfWeek.Monday, frequency: RecurringFrequency.Biweekly, startDate: new DateTime(2026, 3, 2));
         var from = new DateTime(2026, 3, 2);
         var to = new DateTime(2026, 3, 29); // just under 4 weeks — excludes March 30
 
