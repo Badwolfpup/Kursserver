@@ -173,7 +173,6 @@ app.MapDeepSeekEndpoints();
 app.MapGrokEndpoints();
 // app.MapMessageEndpoints();
 app.MapBugReportEndpoints();
-app.MapHelpbotEndpoints();
 app.MapAvailabilityEndpoints();
 app.MapBookingEndpoints();
 app.MapRecurringEventEndpoints();
