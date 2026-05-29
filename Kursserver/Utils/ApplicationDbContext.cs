@@ -32,6 +32,8 @@ namespace Kursserver.Utils
         public DbSet<RecurringEventException> RecurringEventExceptions { get; set; }
         public DbSet<BusyTime> BusyTimes { get; set; }
         public DbSet<SeatingAssignment> SeatingAssignments { get; set; }
+        public DbSet<Computer> Computers { get; set; }
+        public DbSet<ComputerAssignment> ComputerAssignments { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
@@ -215,6 +217,32 @@ namespace Kursserver.Utils
 
             modelBuilder.Entity<SeatingAssignment>()
                 .HasIndex(s => new { s.ClassroomId, s.DayOfWeek, s.Period, s.Row, s.Column })
+                .IsUnique();
+
+            modelBuilder.Entity<Computer>()
+                .HasIndex(c => c.Number)
+                .IsUnique();
+
+            modelBuilder.Entity<Computer>()
+                .HasOne(c => c.OwnerStudent)
+                .WithMany()
+                .HasForeignKey(c => c.OwnerStudentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ComputerAssignment>()
+                .HasOne(a => a.Computer)
+                .WithMany()
+                .HasForeignKey(a => a.ComputerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ComputerAssignment>()
+                .HasOne(a => a.Student)
+                .WithMany()
+                .HasForeignKey(a => a.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ComputerAssignment>()
+                .HasIndex(a => new { a.ComputerId, a.DayOfWeek, a.Period })
                 .IsUnique();
 
             modelBuilder.Entity<RecurringEventException>()

@@ -179,6 +179,7 @@ app.MapBookingEndpoints();
 app.MapRecurringEventEndpoints();
 app.MapBusyTimeEndpoints();
 app.MapSeatingEndpoints();
+app.MapComputerEndpoints();
 app.MapAbsenceWarningEndpoints();
 
 app.MapControllers();
