@@ -110,9 +110,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddHttpClient();
 
-builder.Services.AddScoped<AnthropicService>();
-builder.Services.AddScoped<DeepSeekService>();
-builder.Services.AddScoped<GrokService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
@@ -168,9 +165,6 @@ app.MapValidationEndpoints(jwtSettings);
 // app.MapExerciseEndpoints(); // Students temporarily disabled
 app.MapPostGetPostEndpoint();
 app.MapNoClassEndpoints();
-app.MapAnthropicEndpoints();
-app.MapDeepSeekEndpoints();
-app.MapGrokEndpoints();
 // app.MapMessageEndpoints();
 app.MapBugReportEndpoints();
 app.MapAvailabilityEndpoints();
