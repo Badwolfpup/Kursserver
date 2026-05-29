@@ -9,8 +9,7 @@ GitHub: https://github.com/Badwolfpup/Kursserver
 - **Framework:** ASP.NET Core 9.0 (Minimal APIs, no controllers)
 - **ORM:** Entity Framework Core 9.0 + SQL Server
 - **Auth:** JWT Bearer tokens stored in HttpOnly cookies
-- **Email:** Resend.com (primary), MailKit SMTP (fallback)
-- **AI:** Anthropic (Claude Haiku 4.5), DeepSeek, Grok (xAI)
+- **Email:** Resend.com
 - **Testing:** xUnit + FluentAssertions
 - **Target:** net9.0, nullable enabled, implicit usings
 
@@ -59,10 +58,8 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 | AttendanceEndpoints.cs | GET weekly-attendance/{date}/{count}, PUT update-attendance |
 | NoClassEndpoints.cs | GET noclass, POST noclass/{date} |
 | BugReportEndpoints.cs | GET/POST/DELETE bug-reports |
-| AnthropicEndpoints.cs | POST anthropic/exercise-asserts, exercise-feedback, project, project-feedback |
-| DeepSeekEndpoints.cs | POST deepseek/* (same pattern as Anthropic) |
-| GrokEndpoints.cs | POST grok/* (same pattern as Anthropic) |
-| HelpbotEndpoints.cs | POST helpbot/chat |
+| SeatingEndpoints.cs | GET /api/seating, PUT /api/seating/assign, DELETE /api/seating/clear |
+| ComputerEndpoints.cs | GET /api/computers, GET /api/computer-assignments, POST /api/computers, DELETE /api/computers/{id}, PUT /api/computers/owner, PUT /api/computer-assignments/assign, DELETE /api/computer-assignments/clear |
 | UtillityEndpoints.cs | GET get-week/{date}/{count} |
 
 ## Auth Pattern
@@ -80,7 +77,9 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 
 | Model | Key Fields | Relationships |
 |-------|-----------|---------------|
-| User | id, firstName, lastName, email, authLevel, isActive, coachId, contactId, schedule bools, emailNotifications, telephone | Coach (self-ref), Contact (self-ref), Permission (1:1) |
+| User | id, firstName, lastName, email, authLevel, isActive, status (ParticipantStatus), coachId, contactId, schedule bools, emailNotifications, telephone | Coach (self-ref), Contact (self-ref), Permission (1:1) |
+| Computer | id, number (unique), isActive, ownerStudentId (nullable), takesHome | OwnerStudent (nullable, SetNull). Owner set = dedicated to one student; null = shared |
+| ComputerAssignment | id, computerId, studentId, dayOfWeek (1-4), period (am/pm) | Computer (cascade), Student (cascade). Unique on (computerId, dayOfWeek, period) — shared-computer per-slot grid |
 | Permission | id, userId, html/css/js/variables/conditionals/loops/functions/arrays/objects (all bool) | User (1:1, cascade) |
 | Post | id, html, delta, publishedAt, author, pinned | User (nullable, SetNull) |
 | Project | id, title, description, html, css, js, difficulty, projectType | — |
@@ -100,6 +99,7 @@ Each file defines a static class with `Map*Endpoints(this WebApplication app)`.
 | BugReport | id, type, content, senderId, createdAt | Sender |
 
 Role enum (User.cs): Admin=1, Teacher=2, Coach=3, Student=4, Guest=5
+ParticipantStatus enum (User.cs): OnSite=1, Distance=2, Paused=3 (stored as int; default OnSite). Distance/Paused = "reduced attendance" — no absence warning, separate Närvaro section, excluded from Klassrum seating
 
 Booking-domain enums (stored as PascalCase strings via EF `HasConversion<string>()`):
 - `BookingStatus`: Pending | Accepted | Declined
@@ -111,10 +111,7 @@ Booking-domain enums (stored as PascalCase strings via EF `HasConversion<string>
 
 | Service | Purpose |
 |---------|---------|
-| EmailService | Resend.com (ResendEmailAsync) + MailKit SMTP fallback. From: noreply@culprogrammering.net |
-| AnthropicService | Claude Haiku 4.5 completions (claude-haiku-4-5-20251001) |
-| DeepSeekService | DeepSeek API completions |
-| GrokService | Grok/xAI completions (grok-code-fast-1, grok-3-mini-fast) |
+| EmailService | Resend.com — ResendEmailAsync (passcodes) + SendEmailFireAndForget (notifications). From: noreply@culprogrammering.net |
 | BookingNotifier | Email notifications for booking lifecycle (created, status changed, cancelled, rescheduled, transferred). Swedish language. Respects EmailNotifications flag. Coach↔Admin only (no student paths). |
 | ConflictDetection | `CheckAcceptedBookingConflicts` — returns accepted-status bookings overlapping a time range. Pendings intentionally not reported (they coexist). |
 | RecurringEventExpander | Expands recurring events into instances for a date range, respects exceptions and NoClass dates |
@@ -139,10 +136,7 @@ Booking-domain enums (stored as PascalCase strings via EF `HasConversion<string>
 - Email notifications on new messages: respects `EmailNotifications` flag, skipped in dev environment
 
 ## AI Integration
-- Three parallel providers (Anthropic, DeepSeek, Grok) with identical endpoint patterns
-- Prompt templates for exercises & projects accept topic, language/tech-stack, difficulty, and recent history
-- Response parsers extract structured data from AI output
-- History tracked in ExerciseHistory/ProjectHistory tables
+- Removed (2026-05-29). The AI providers (Anthropic, DeepSeek, Grok), their endpoints/services, and the navbar helpbot were deleted — no AI features remain. Exercise/Project prompt-template + parser util classes still exist but are dormant (the student exercise/project features are disabled).
 
 ## Error Handling
 - Endpoints use try-catch returning `Results.BadRequest/NotFound/Conflict/Problem`
@@ -166,8 +160,7 @@ Skip service methods and helpers — only endpoint registrations get these comme
 
 ## Configuration
 - Connection: SQL Server (site4now.net production, local dev with Integrated Security)
-- Email: Resend API key + SMTP fallback (noreply@culprogrammering.se)
-- AI keys: Anthropic, DeepSeek, Grok in appsettings.json
+- Email: Resend API key (noreply@culprogrammering.net)
 - JWT: Key, Issuer, Audience in Jwt section
 - CORS: `AllowedOrigin` key required in production
 

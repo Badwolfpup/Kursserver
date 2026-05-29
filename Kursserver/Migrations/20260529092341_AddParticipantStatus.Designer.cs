@@ -4,6 +4,7 @@ using Kursserver.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kursserver.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529092341_AddParticipantStatus")]
+    partial class AddParticipantStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,68 +187,6 @@ namespace Kursserver.Migrations
                     b.HasIndex("AdminId");
 
                     b.ToTable("BusyTimes");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.Computer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Number")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("OwnerStudentId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("TakesHome")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Number")
-                        .IsUnique();
-
-                    b.HasIndex("OwnerStudentId");
-
-                    b.ToTable("Computers");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.ComputerAssignment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ComputerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Period")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("ComputerId", "DayOfWeek", "Period")
-                        .IsUnique();
-
-                    b.ToTable("ComputerAssignments");
                 });
 
             modelBuilder.Entity("Kursserver.Models.Exercise", b =>
@@ -939,35 +880,6 @@ namespace Kursserver.Migrations
                         .IsRequired();
 
                     b.Navigation("Admin");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.Computer", b =>
-                {
-                    b.HasOne("Kursserver.Models.User", "OwnerStudent")
-                        .WithMany()
-                        .HasForeignKey("OwnerStudentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("OwnerStudent");
-                });
-
-            modelBuilder.Entity("Kursserver.Models.ComputerAssignment", b =>
-                {
-                    b.HasOne("Kursserver.Models.Computer", "Computer")
-                        .WithMany()
-                        .HasForeignKey("ComputerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Kursserver.Models.User", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Computer");
-
-                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("Kursserver.Models.ExerciseHistory", b =>

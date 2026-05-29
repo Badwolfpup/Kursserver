@@ -11,6 +11,7 @@ namespace Kursserver.Dto
         public string? Telephone { get; set; }
         public Role AuthLevel { get; set; }
         public int? Course { get; set; }
+        public ParticipantStatus? Status { get; set; }
         public int? CoachId { get; set; }
 
         public DateTime? StartDate { get; set; }

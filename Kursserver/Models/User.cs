@@ -12,6 +12,13 @@ namespace Kursserver.Models
         Guest = 5
     }
 
+    public enum ParticipantStatus
+    {
+        OnSite = 1,
+        Distance = 2,
+        Paused = 3
+    }
+
     public class User
     {
         [Key]
@@ -33,6 +40,8 @@ namespace Kursserver.Models
 
         public DateTime? StartDate { get; set; }
         public int? Course { get; set; } = 3;
+
+        public ParticipantStatus Status { get; set; } = ParticipantStatus.OnSite;
 
         public int? CoachId { get; set; }
         public User? Coach { get; set; }

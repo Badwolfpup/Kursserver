@@ -1,7 +1,4 @@
-﻿using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
-using Resend;
+﻿using Resend;
 
 
 namespace Kursserver.Utils
@@ -31,23 +28,6 @@ namespace Kursserver.Utils
             });
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string body)
-        {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("noreply@culprogrammering.se", _config["Smtp:Username"]));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = subject;
-            message.Body = new TextPart("plain") { Text = $"OBS! Detta är ett automatiskt emailutskick. Du kan inte svara på det.\n---\n\n{body}" };
-
-            using (var client = new SmtpClient())
-            {
-                await client.ConnectAsync(_config["Smtp:Host"], int.Parse(_config["Smtp:Port"]), SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync(_config["Smtp:Username"], _config["Smtp:Password"]);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-            }
-        }
-
         public void SendEmailFireAndForget(string toEmail, string subject, string body)
         {
             if (_isDevelopment) return;
@@ -64,8 +44,6 @@ namespace Kursserver.Utils
                     });
                 }
                 catch { /* silently ignore */ }
-                // try { await SendEmailAsync(toEmail, subject, body); }
-                // catch { /* silently ignore */ }
             });
         }
     }

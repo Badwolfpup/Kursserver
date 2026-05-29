@@ -16,6 +16,8 @@ namespace Kursserver.Dto
 
         public int? Course { get; set; }
 
+        public ParticipantStatus? Status { get; set; }
+
         public int? CoachId { get; set; }
 
         public int? ContactId { get; set; }
