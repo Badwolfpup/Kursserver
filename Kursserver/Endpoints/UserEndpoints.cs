@@ -27,6 +27,7 @@ namespace Kursserver.Endpoints
                     Telephone = dto.Telephone ?? null,
                     AuthLevel = (Role)dto.AuthLevel,
                     Course = dto.Course ?? null,
+                    Status = dto.Status ?? ParticipantStatus.OnSite,
                     CoachId = dto.CoachId ?? null,
                     ContactId = dto.ContactId ?? null,
                     StartDate = dto.StartDate ?? null,
@@ -149,6 +150,15 @@ namespace Kursserver.Endpoints
 
 
 
+            /// <summary>
+            /// SCENARIO: Admin/teacher edits a participant's details (name, contact, schedule track,
+            ///           jobbcoach, kontaktlärare, or participant status: på plats / distans / paus)
+            /// CALLS: useUpdateUser() → userService.updateUser()
+            /// SIDE EFFECTS:
+            ///   - Updates only the provided fields on the target user (each guarded by HasValue / non-empty)
+            ///   - Status drives reduced-attendance UI (no absence warning, separate Närvaro section,
+            ///     hidden empty attendance cells, excluded from Klassrum seating)
+            /// </summary>
             app.MapPut("api/update-user", [Authorize] async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
@@ -170,6 +180,7 @@ namespace Kursserver.Endpoints
                     if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
                     if (!string.IsNullOrEmpty(dto.Telephone)) user.Telephone = dto.Telephone;
                     if (dto.Course != null && dto.Course > 0) user.Course = dto.Course.Value;
+                    if (dto.Status.HasValue) user.Status = dto.Status.Value;
                     if (dto.CoachId != null && dto.CoachId > 0) user.CoachId = dto.CoachId.Value;
                     if (dto.ContactId != null && dto.ContactId > 0) user.ContactId = dto.ContactId.Value;
                     if (dto.AuthLevel.HasValue) user.AuthLevel = dto.AuthLevel.Value;
