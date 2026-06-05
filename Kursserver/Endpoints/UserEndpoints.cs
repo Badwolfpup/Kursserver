@@ -63,8 +63,8 @@ namespace Kursserver.Endpoints
             /// CALLS: useDeleteUser() → userService.deleteUser()
             /// SIDE EFFECTS:
             ///   - Nullifies CoachId and ContactId on all users referencing the deleted user
-            ///   - Deletes bookings, admin availability, recurring events, threads, messages, and bug reports referencing the user
-            ///   - Removes user from database (cascades: Permission, Attendance, ExerciseHistory, ProjectHistory, ThreadView; sets null: Post.UserId)
+            ///   - Deletes bookings, admin availability, recurring events, and bug reports referencing the user
+            ///   - Removes user from database (cascades: Permission, Attendance)
             /// </summary>
             app.MapDelete("api/delete-user/", [Authorize] async ([FromBody] DeleteUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
@@ -84,29 +84,6 @@ namespace Kursserver.Endpoints
                     await db.Users
                         .Where(u => u.CoachId == userId)
                         .ExecuteUpdateAsync(s => s.SetProperty(u => u.CoachId, (int?)null));
-
-                    // Delete messages in threads involving this user (must delete before threads)
-                    var threadIds = await db.Threads
-                        .Where(t => t.User1Id == userId || t.User2Id == userId)
-                        .Select(t => t.Id)
-                        .ToListAsync();
-                    if (threadIds.Count > 0)
-                    {
-                        await db.Messages
-                            .Where(m => threadIds.Contains(m.ThreadId))
-                            .ExecuteDeleteAsync();
-                        await db.ThreadViews
-                            .Where(v => threadIds.Contains(v.ThreadId))
-                            .ExecuteDeleteAsync();
-                        await db.Threads
-                            .Where(t => threadIds.Contains(t.Id))
-                            .ExecuteDeleteAsync();
-                    }
-
-                    // Delete messages sent by this user in other threads
-                    await db.Messages
-                        .Where(m => m.SenderId == userId)
-                        .ExecuteDeleteAsync();
 
                     // Delete bookings referencing this user
                     await db.Bookings
