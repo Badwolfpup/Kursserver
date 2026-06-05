@@ -1,5 +1,6 @@
 using System.Net;
 using Kursserver.Dto;
+using Kursserver.Models;
 using Kursserver.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,12 @@ namespace Kursserver.Endpoints
 
                 if (string.IsNullOrWhiteSpace(dto.CoachEmail))
                     return Results.BadRequest("Coach email is required.");
+
+                // Restrict the recipient to a registered coach so the app's sending domain
+                // can't be used to mail arbitrary addresses.
+                var isCoachEmail = await db.Users.AnyAsync(u => u.Email == dto.CoachEmail && u.AuthLevel == Role.Coach);
+                if (!isCoachEmail)
+                    return Results.BadRequest("Recipient must be a registered coach.");
 
                 var sanitizedBody = WebUtility.HtmlEncode(dto.Body);
                 emailService.SendEmailFireAndForget(dto.CoachEmail, dto.Subject, sanitizedBody);

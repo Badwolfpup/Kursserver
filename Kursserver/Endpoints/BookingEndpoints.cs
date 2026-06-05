@@ -28,6 +28,11 @@ namespace Kursserver.Endpoints
                     if (string.IsNullOrEmpty(userRole) || !Enum.TryParse<Role>(userRole, out var role))
                         return Results.Unauthorized();
 
+                    // Only staff may read bookings. Without this, any other authenticated role
+                    // (e.g. a Guest) would fall through to the full-dump branch below.
+                    if (role != Role.Admin && role != Role.Teacher && role != Role.Coach)
+                        return Results.StatusCode(403);
+
                     if (role == Role.Coach)
                     {
                         var own = await db.Bookings

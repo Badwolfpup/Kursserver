@@ -32,6 +32,11 @@ namespace Kursserver.Endpoints
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 1);
                 if (accessCheck != null) return accessCheck;
 
+                // A staff member may only create availability for themselves.
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
+                if (dto.AdminId != userId)
+                    return Results.StatusCode(403);
+
                 if (dto.StartTime >= dto.EndTime)
                     return Results.BadRequest("Starttid måste vara före sluttid.");
 
@@ -62,6 +67,11 @@ namespace Kursserver.Endpoints
                 var availability = await db.AdminAvailabilities.FindAsync(id);
                 if (availability == null) return Results.NotFound("Availability not found");
 
+                // A staff member may only modify their own availability.
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
+                if (availability.AdminId != userId)
+                    return Results.StatusCode(403);
+
                 if (dto.StartTime >= dto.EndTime)
                     return Results.BadRequest("Starttid måste vara före sluttid.");
 
@@ -85,6 +95,11 @@ namespace Kursserver.Endpoints
 
                 var availability = await db.AdminAvailabilities.FindAsync(id);
                 if (availability == null) return Results.NotFound("Availability not found");
+
+                // A staff member may only modify their own availability.
+                var userId = int.Parse(context.User.FindFirst("id")!.Value);
+                if (availability.AdminId != userId)
+                    return Results.StatusCode(403);
 
                 db.AdminAvailabilities.Remove(availability);
                 await db.SaveChangesAsync();
