@@ -17,7 +17,7 @@ namespace Kursserver.Endpoints
 
             app.MapPost("api/add-user", [Authorize] async ([FromBody] AddUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)dto.AuthLevel);
+                var accessCheck = HasAdminPriviligies.CanManageUser(context, dto.AuthLevel);
                 if (accessCheck != null) return accessCheck;
                 var user = new User
                 {
@@ -72,7 +72,7 @@ namespace Kursserver.Endpoints
                 {
                     var user = await db.Users.FindAsync(dto.Id);
                     if (user == null) return Results.Problem("User not found");
-                    var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)user.AuthLevel);
+                    var accessCheck = HasAdminPriviligies.CanManageUser(context, user.AuthLevel);
                     if (accessCheck != null) return accessCheck;
 
                     var userId = user.Id;
@@ -130,6 +130,8 @@ namespace Kursserver.Endpoints
             /// <summary>
             /// SCENARIO: Admin/teacher edits a participant's details (name, contact, schedule track,
             ///           jobbcoach, kontaktlärare, or participant status: på plats / distans / paus)
+            /// AUTH: staff only (Admin/Teacher/Coach). Editing an Admin/Teacher account requires Admin
+            ///       (or self); changing a user's AuthLevel (role) requires Admin.
             /// CALLS: useUpdateUser() → userService.updateUser()
             /// SIDE EFFECTS:
             ///   - Updates only the provided fields on the target user (each guarded by HasValue / non-empty)
@@ -138,18 +140,28 @@ namespace Kursserver.Endpoints
             /// </summary>
             app.MapPut("api/update-user", [Authorize] async ([FromBody] UpdateUserDto dto, ApplicationDbContext db, HttpContext context) =>
             {
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, 1, 1);
-                if (accessCheck != null) return accessCheck;
-                // User? kontaktUser = null;
-                // if (dto.ContactId != null && dto.ContactId > 0)
-                // {
-                //     kontaktUser = db.Users.FirstOrDefault(x => x.Id == dto.ContactId.Value);
-                // }
-                // var isAdminOrTeacher = kontaktUser != null &&
-                //     (kontaktUser.AuthLevel == Role.Admin || kontaktUser.AuthLevel == Role.Teacher);
-                // if (!isAdminOrTeacher) return Results.Forbid();
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
+
+                var callerRoleStr = context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                if (string.IsNullOrEmpty(callerRoleStr) || !Enum.TryParse<Role>(callerRoleStr, out var callerRole))
+                    return Results.Unauthorized();
+
+                // Only staff (Admin/Teacher/Coach) may edit users.
+                if (callerRole != Role.Admin && callerRole != Role.Teacher && callerRole != Role.Coach)
+                    return Results.StatusCode(403);
+
+                // Editing a privileged account (Admin/Teacher) requires Admin — unless editing yourself.
+                var callerId = new FromClaims().GetUserId(context);
+                if ((user.AuthLevel == Role.Admin || user.AuthLevel == Role.Teacher)
+                    && callerRole != Role.Admin
+                    && user.Id != callerId)
+                    return Results.Unauthorized();
+
+                // Only an Admin may change a user's role (prevents privilege escalation).
+                if (dto.AuthLevel.HasValue && dto.AuthLevel.Value != user.AuthLevel && callerRole != Role.Admin)
+                    return Results.Unauthorized();
+
                 try
                 {
                     if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
@@ -303,7 +315,7 @@ namespace Kursserver.Endpoints
 
                 var user = db.Users.FirstOrDefault(x => x.Id == dto.Id);
                 if (user == null) return Results.NotFound();
-                var accessCheck = HasAdminPriviligies.IsTeacher(context, (int)user.AuthLevel);
+                var accessCheck = HasAdminPriviligies.CanManageUser(context, user.AuthLevel);
                 if (accessCheck != null) return accessCheck;
                 try
                 {

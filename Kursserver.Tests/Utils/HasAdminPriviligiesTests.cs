@@ -80,4 +80,49 @@ public class HasAdminPriviligiesTests
         var statusResult = result as Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult;
         statusResult!.StatusCode.Should().Be(403);
     }
+
+    // --- CanManageUser(context, affectedRole) ---
+    // Caller must be staff (Admin/Teacher); acting on a privileged target (Admin/Teacher) requires Admin.
+
+    [Theory]
+    [InlineData(Role.Student)]
+    [InlineData(Role.Coach)]
+    [InlineData(Role.Teacher)]
+    [InlineData(Role.Admin)]
+    public void CanManageUser_AdminCaller_AnyTarget_ReturnsNull(Role affected)
+    {
+        var ctx = MakeContext(Role.Admin);
+        HasAdminPriviligies.CanManageUser(ctx, affected).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(Role.Student)]
+    [InlineData(Role.Coach)]
+    public void CanManageUser_TeacherCaller_NonPrivilegedTarget_ReturnsNull(Role affected)
+    {
+        var ctx = MakeContext(Role.Teacher);
+        HasAdminPriviligies.CanManageUser(ctx, affected).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(Role.Teacher)]
+    [InlineData(Role.Admin)]
+    public void CanManageUser_TeacherCaller_PrivilegedTarget_Returns401(Role affected)
+    {
+        var ctx = MakeContext(Role.Teacher);
+        var result = HasAdminPriviligies.CanManageUser(ctx, affected);
+        (result as Microsoft.AspNetCore.Http.HttpResults.UnauthorizedHttpResult).Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(Role.Coach)]
+    [InlineData(Role.Student)]
+    [InlineData(Role.Guest)]
+    public void CanManageUser_NonStaffCaller_Returns403(Role caller)
+    {
+        var ctx = MakeContext(caller);
+        var result = HasAdminPriviligies.CanManageUser(ctx, Role.Student);
+        var statusResult = result as Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult;
+        statusResult!.StatusCode.Should().Be(403);
+    }
 }
