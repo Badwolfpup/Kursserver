@@ -27,7 +27,7 @@ namespace Kursserver.Endpoints
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
 
-            app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db, EmailService email) =>
+            app.MapPost("api/email-validation", async (ValidateEmailDto dto, ApplicationDbContext db, IEmailService email) =>
             {
                 var user = await db.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
                 if (user == null) return Results.NotFound("Email not found.");

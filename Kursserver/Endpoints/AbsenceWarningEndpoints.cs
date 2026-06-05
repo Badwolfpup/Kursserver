@@ -30,7 +30,7 @@ namespace Kursserver.Endpoints
             /// - Sends email to coach via EmailService.SendEmailFireAndForget (Resend API, fire-and-forget)
             /// - No-op in development mode
             /// </summary>
-            app.MapPost("/api/absence-warning/send", [Authorize] async (SendAbsenceWarningDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPost("/api/absence-warning/send", [Authorize] async (SendAbsenceWarningDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 var accessCheck = HasAdminPriviligies.IsTeacher(context, 4);
                 if (accessCheck != null) return accessCheck;

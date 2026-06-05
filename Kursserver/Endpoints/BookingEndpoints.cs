@@ -70,7 +70,7 @@ namespace Kursserver.Endpoints
             ///   - Sends email notification via BookingNotifier
             ///   - Returns 409 on accepted-booking overlap
             /// </summary>
-            app.MapPost("/api/bookings", [Authorize] async (CreateBookingDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPost("/api/bookings", [Authorize] async (CreateBookingDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
@@ -158,7 +158,7 @@ namespace Kursserver.Endpoints
             ///   - Sets booking Status + Reason
             ///   - Sends email via BookingNotifier
             /// </summary>
-            app.MapPut("/api/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPut("/api/bookings/{id}/status", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
@@ -210,7 +210,7 @@ namespace Kursserver.Endpoints
             ///   - Sets booking Status = Declined
             ///   - Sends email via BookingNotifier
             /// </summary>
-            app.MapPut("/api/bookings/{id}/cancel", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPut("/api/bookings/{id}/cancel", [Authorize] async (int id, UpdateBookingStatusDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
@@ -259,7 +259,7 @@ namespace Kursserver.Endpoints
             ///   - If booking was pending, sets status to Accepted
             ///   - Sends transfer notification email via BookingNotifier.NotifyTransferred
             /// </summary>
-            app.MapPut("/api/bookings/{id}/transfer", [Authorize] async (int id, TransferBookingDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPut("/api/bookings/{id}/transfer", [Authorize] async (int id, TransferBookingDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
@@ -308,7 +308,7 @@ namespace Kursserver.Endpoints
             ///   - Sets Status = Pending and RescheduledBy = caller's role
             ///   - Sends email via BookingNotifier
             /// </summary>
-            app.MapPut("/api/bookings/{id}/reschedule", [Authorize] async (int id, UpdateBookingTimesDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPut("/api/bookings/{id}/reschedule", [Authorize] async (int id, UpdateBookingTimesDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
