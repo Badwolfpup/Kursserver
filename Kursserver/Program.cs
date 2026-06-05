@@ -97,7 +97,7 @@ builder.Services.Configure<ResendClientOptions>(options =>
     options.ApiToken = builder.Configuration["Resend:ApiKey"];
 });
 
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

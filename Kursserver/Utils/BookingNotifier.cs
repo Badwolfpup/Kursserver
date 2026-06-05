@@ -4,10 +4,10 @@ namespace Kursserver.Utils
 {
     public class BookingNotifier
     {
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly ApplicationDbContext _db;
 
-        public BookingNotifier(EmailService emailService, ApplicationDbContext db)
+        public BookingNotifier(IEmailService emailService, ApplicationDbContext db)
         {
             _emailService = emailService;
             _db = db;
@@ -92,9 +92,11 @@ namespace Kursserver.Utils
         }
 
         /// <summary>
-        /// SCENARIO: Booking transferred to another teacher — notifies coach
+        /// SCENARIO: Booking transferred to another teacher — notifies the coach about the
+        ///   participant change AND the newly-assigned teacher that a meeting was assigned to them.
         /// CALLS: PUT /api/bookings/{id}/transfer (BookingEndpoints.cs)
-        /// SIDE EFFECTS: Sends email to coach about teacher change
+        /// SIDE EFFECTS: Sends email to coach about teacher change; sends email to new teacher
+        ///   (gated on their EmailNotifications preference, like all other admin-directed emails)
         /// </summary>
         public async Task NotifyTransferred(Booking booking, int oldAdminId)
         {
@@ -104,13 +106,22 @@ namespace Kursserver.Utils
             var newName = newAdmin != null ? $"{newAdmin.FirstName} {newAdmin.LastName}" : "Okänd";
             var dateStr = booking.StartTime.ToString("yyyy-MM-dd");
             var timeStr = booking.StartTime.ToString("HH:mm");
-            var message = $"{newName} kommer att delta på mötet {dateStr} kl.{timeStr} istället för {oldName}.";
 
-            if (booking.CoachId.HasValue)
+            var coach = booking.CoachId.HasValue ? await _db.Users.FindAsync(booking.CoachId.Value) : null;
+            var coachName = coach != null ? $"{coach.FirstName} {coach.LastName}" : "en coach";
+
+            // Notify the coach that the participating teacher changed
+            if (coach != null)
             {
-                var coach = await _db.Users.FindAsync(booking.CoachId.Value);
-                if (coach != null)
-                    _emailService.SendEmailFireAndForget(coach.Email, "Ändring av mötesdeltagare", message);
+                var coachMessage = $"{newName} kommer att delta på mötet {dateStr} kl.{timeStr} istället för {oldName}.";
+                _emailService.SendEmailFireAndForget(coach.Email, "Ändring av mötesdeltagare", coachMessage);
+            }
+
+            // Notify the newly-assigned teacher that a meeting was assigned to them
+            if (newAdmin?.EmailNotifications == true)
+            {
+                var adminMessage = $"{oldName} har överlåtit ett möte med {coachName} till dig {dateStr} kl.{timeStr}.";
+                _emailService.SendEmailFireAndForget(newAdmin.Email, "Möte tilldelat dig", adminMessage);
             }
         }
 

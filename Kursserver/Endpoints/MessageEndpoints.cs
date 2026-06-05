@@ -143,7 +143,7 @@ namespace Kursserver.Endpoints
             ///   - Updates Thread.UpdatedAt
             ///   - Sends email to recipient if EmailNotifications = true (EmailService)
             /// </summary>
-            app.MapPost("/api/messages", [Authorize] async ([FromBody] SendMessageDto dto, ApplicationDbContext db, HttpContext context, EmailService emailService) =>
+            app.MapPost("/api/messages", [Authorize] async ([FromBody] SendMessageDto dto, ApplicationDbContext db, HttpContext context, IEmailService emailService) =>
             {
                 try
                 {
