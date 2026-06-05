@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 
@@ -42,7 +43,7 @@ namespace Kursserver.Endpoints
                 {
                     if (app.Environment.IsDevelopment())
                     {
-                        int passcode = Random.Shared.Next(100000, 999999);
+                        int passcode = RandomNumberGenerator.GetInt32(100000, 1000000);
                         passcodeStore[user.Email] = passcode;
                         // await email.ResendEmailAsync(user.Email, passcode);
                         // return Results.Ok("passcode");
@@ -51,9 +52,11 @@ namespace Kursserver.Endpoints
                     else
                     {
                         // if (user.AuthLevel == Role.Student) return Results.NotFound("Email not found.");
-                        int passcode = Random.Shared.Next(100000, 999999);
+                        int passcode = RandomNumberGenerator.GetInt32(100000, 1000000);
                         passcodeStore[user.Email] = passcode;
-                        passcodeAttempts[user.Email] = passcodeAttempts.ContainsKey(dto.Email) ? passcodeAttempts[dto.Email]++ : 1;
+                        // Issuing a fresh code resets the failed-attempt budget; the lockout is
+                        // driven by consecutive failed validations in api/passcode-validation.
+                        passcodeAttempts[user.Email] = 0;
                         await email.ResendEmailAsync(user.Email, passcode);
                         // await email.SendEmailAsync(dto.Email, "Lösenkod CUL Programmering", $"Din lösenkod är : {passcode}");
                         return Results.Ok("Passcode sent to your email.");

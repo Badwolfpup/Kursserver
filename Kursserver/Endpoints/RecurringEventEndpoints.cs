@@ -98,6 +98,10 @@ namespace Kursserver.Endpoints
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
 
+                    // Owner-or-Admin: a non-admin may only modify their own recurring events.
+                    if (userRole != Role.Admin.ToString() && ev.AdminId != userId)
+                        return Results.StatusCode(403);
+
 
 
                     if (dto.Name != null) ev.Name = dto.Name;
@@ -142,6 +146,10 @@ namespace Kursserver.Endpoints
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
 
+                    // Owner-or-Admin: a non-admin may only modify their own recurring events.
+                    if (userRole != Role.Admin.ToString() && ev.AdminId != userId)
+                        return Results.StatusCode(403);
+
                     db.RecurringEvents.Remove(ev);
                     await db.SaveChangesAsync();
                     return Results.Ok();
@@ -170,6 +178,10 @@ namespace Kursserver.Endpoints
 
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
+
+                    // Owner-or-Admin: a non-admin may only modify their own recurring events.
+                    if (userRole != Role.Admin.ToString() && ev.AdminId != userId)
+                        return Results.StatusCode(403);
 
                     var existing = await db.RecurringEventExceptions
                         .FirstOrDefaultAsync(e => e.RecurringEventId == id && e.Date.Date == date.Date);
@@ -223,6 +235,10 @@ namespace Kursserver.Endpoints
 
                     var ev = await db.RecurringEvents.FindAsync(id);
                     if (ev == null) return Results.NotFound("Recurring event not found");
+
+                    // Owner-or-Admin: a non-admin may only modify their own recurring events.
+                    if (userRole != Role.Admin.ToString() && ev.AdminId != userId)
+                        return Results.StatusCode(403);
 
                     var exception = await db.RecurringEventExceptions
                         .FirstOrDefaultAsync(e => e.RecurringEventId == id && e.Date.Date == date.Date);
