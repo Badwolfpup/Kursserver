@@ -10,6 +10,11 @@ namespace Kursserver.Endpoints
     {
         private static readonly HashSet<string> ValidPeriods = new() { "am", "pm" };
 
+        // Who may be assigned a computer (as owner or per-slot). Students borrow their own
+        // machine; staff (admins/teachers) may also borrow and — unlike students — are not
+        // limited to a single computer (that "one per student" rule lives in the frontend).
+        private static readonly HashSet<Role> BorrowerRoles = new() { Role.Student, Role.Teacher, Role.Admin };
+
         public static void MapComputerEndpoints(this WebApplication app)
         {
             /// <summary>
@@ -72,8 +77,9 @@ namespace Kursserver.Endpoints
             });
 
             /// <summary>
-            /// SCENARIO: Admin/Teacher dedicates a whole computer to one student (with optional
-            ///           take-home), or clears the owner to make it shared again
+            /// SCENARIO: Admin/Teacher dedicates a whole computer to one borrower — a student or a
+            ///           staff member (admin/teacher) — with optional take-home, or clears the
+            ///           owner to make it shared again
             /// CALLS: useSetComputerOwner() → setComputerOwner() (kurshemsida)
             /// SIDE EFFECTS:
             ///   - Sets/clears Computer.OwnerStudentId and TakesHome
@@ -88,9 +94,9 @@ namespace Kursserver.Endpoints
 
                 if (dto.StudentId.HasValue)
                 {
-                    var student = await db.Users.FindAsync(dto.StudentId.Value);
-                    if (student == null || student.AuthLevel != Role.Student)
-                        return Results.BadRequest("Invalid student");
+                    var user = await db.Users.FindAsync(dto.StudentId.Value);
+                    if (user == null || !BorrowerRoles.Contains(user.AuthLevel))
+                        return Results.BadRequest("Invalid borrower");
                     computer.OwnerStudentId = dto.StudentId.Value;
                     computer.TakesHome = dto.TakesHome;
                     // A dedicated computer is no longer shared per slot.
@@ -108,7 +114,8 @@ namespace Kursserver.Endpoints
             });
 
             /// <summary>
-            /// SCENARIO: Admin/Teacher assigns a student to a shared computer for a day/period (upsert)
+            /// SCENARIO: Admin/Teacher assigns a borrower (student or staff member) to a shared
+            ///           computer for a day/period (upsert)
             /// CALLS: useAssignComputerSlot() → assignComputerSlot() (kurshemsida)
             /// SIDE EFFECTS: creates or updates a ComputerAssignment for the computer/day/period
             /// </summary>
@@ -121,9 +128,9 @@ namespace Kursserver.Endpoints
                 if (dto.DayOfWeek < 1 || dto.DayOfWeek > 4)
                     return Results.BadRequest("DayOfWeek must be 1-4");
 
-                var student = await db.Users.FindAsync(dto.StudentId);
-                if (student == null || student.AuthLevel != Role.Student)
-                    return Results.BadRequest("Invalid student");
+                var user = await db.Users.FindAsync(dto.StudentId);
+                if (user == null || !BorrowerRoles.Contains(user.AuthLevel))
+                    return Results.BadRequest("Invalid borrower");
 
                 try
                 {
