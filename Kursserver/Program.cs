@@ -157,15 +157,10 @@ app.Use(async (context, next) =>
 
 // Enable authentication and authorization middleware
 app.MapAttendanceEndpoints();
-app.MapPostEndpoints();
 app.MapUserEndpoints();
 app.MapUtilityEndpoints();
 app.MapValidationEndpoints(jwtSettings);
-// app.MapProjectEndpoints(); // Students temporarily disabled
-// app.MapExerciseEndpoints(); // Students temporarily disabled
-app.MapPostGetPostEndpoint();
 app.MapNoClassEndpoints();
-// app.MapMessageEndpoints();
 app.MapBugReportEndpoints();
 app.MapAvailabilityEndpoints();
 app.MapBookingEndpoints();
